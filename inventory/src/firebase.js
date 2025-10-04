@@ -1,26 +1,50 @@
+// src/firebase.js
 import { initializeApp } from "firebase/app";
-import { getAuth, onAuthStateChanged, signOut } from "firebase/auth";
+import {
+  getAuth,
+  GoogleAuthProvider,
+  signInWithPopup,
+  signOut,
+  onAuthStateChanged,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+} from "firebase/auth";
+import { getAnalytics } from "firebase/analytics";
 
+// Your Firebase config
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_AUTH_DOMAIN",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_BUCKET",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyAdm0UN1UoeFqIwQj_iX6CF7QfLVZQwmY8",
+  authDomain: "inventory-b1e8d.firebaseapp.com",
+  projectId: "inventory-b1e8d",
+  storageBucket: "inventory-b1e8d.firebasestorage.app",
+  messagingSenderId: "388920844869",
+  appId: "1:388920844869:web:91a2da52919023acfcf92c",
+  measurementId: "G-K9B1KZQN7Z",
 };
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
+
+// Initialize Authentication
 const auth = getAuth(app);
+const provider = new GoogleAuthProvider();
 
-// custom functions
-export function onAuthChange(callback) {
-  return onAuthStateChanged(auth, callback);
-}
+// Sign in with Google
+export const signInWithGoogle = () => signInWithPopup(auth, provider);
 
-export function logOut() {
-  return signOut(auth);
-}
+// Sign up with email/password
+export const signUpWithEmail = (email, password) =>
+  createUserWithEmailAndPassword(auth, email, password);
 
-export { auth, app };
+// Sign in with email/password
+export const signInWithEmail = (email, password) =>
+  signInWithEmailAndPassword(auth, email, password);
+
+// Listen to auth state changes
+export const onAuthChange = (callback) => onAuthStateChanged(auth, callback);
+
+// Logout
+export const logOut = () => signOut(auth);
+
+export { auth };
