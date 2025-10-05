@@ -1,23 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { logOut } from "../firebase";
 import { Warehouse, Settings, LogOut, ChevronDown, User } from 'lucide-react';
+import { onAuthChange } from "../firebase"; 
 
-const MOCK_USER_ID = "mock-user-123";
-const MOCK_USERNAME_ENGLISH = "System Administrator"; 
-const logOut = () => {
-  console.log("Mock Logout called. User ID:", MOCK_USER_ID);
-  
-  const logoutMessage = document.createElement('div');
-  logoutMessage.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]';
-  logoutMessage.innerHTML = `
-    <div class="bg-white p-8 rounded-xl shadow-2xl max-w-sm text-center">
-      <h3 class="text-xl font-bold text-red-600 mb-3">Logged Out!</h3>
-      <p class="text-gray-700">Mock logout successful. Thank you for using the Inventory System.</p>
-      <button onclick="document.querySelector('.fixed.inset-0').remove()" 
-              class="mt-5 bg-teal-600 text-white px-4 py-2 rounded-lg hover:bg-teal-700 transition-colors">Close</button>
-    </div>
-  `;
-  document.body.appendChild(logoutMessage);
-};
+
+
+
 
 const campuses = [
   { name: "Dantewada", region: "Chhattisgarh", imageUrl: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTwA_D-3McRQVCqgtsbToJflvTGOY7pv8Wob0IDnx6lGsvYMQD8_fJz6R_aipzeTKg_u2c&usqp=CAU" },
@@ -54,7 +42,7 @@ const CampusCard = ({ name, region, imageUrl }) => (
 );
 
 // Component for a Navigation Item with optional Dropdown
-const NavItem = ({ title, icon: Icon, dropdownItems }) => {
+const NavItem = ({ title, icon: Icon, dropdownItems ,setCurrentUser}) => {
   const [isOpen, setIsOpen] = useState(false);
 
   // Function to handle the actual link/action (mocked)
@@ -62,6 +50,16 @@ const NavItem = ({ title, icon: Icon, dropdownItems }) => {
     console.log(`Mapsd to: ${itemTitle}`);
     // You would typically handle routing here
   };
+
+  useEffect(() => {
+  const unsubscribe = onAuthChange((user) => {
+    if (user) setCurrentUser(user); // set logged in user
+    else setCurrentUser(null); // user logged out
+  });
+
+  return () => unsubscribe(); // cleanup
+}, [setCurrentUser]);
+
 
   return (
     <div 
@@ -97,6 +95,14 @@ const NavItem = ({ title, icon: Icon, dropdownItems }) => {
 };
 
 const App = () => {
+  const [currentUser, setCurrentUser] = useState(null);
+useEffect(() => {
+    const unsubscribe = onAuthChange((user) => {
+      if (user) setCurrentUser(user);
+      else setCurrentUser(null);
+    });
+    return () => unsubscribe();
+  }, []);
   const navStructure = [
     { 
       title: "Assets", 
@@ -133,21 +139,39 @@ const App = () => {
             
             <nav className="hidden md:flex space-x-1">
               {navStructure.map((item, index) => (
-                <NavItem key={index} {...item} />
+<NavItem
+  key={index}
+  title={item.title}
+  icon={item.icon}
+  dropdownItems={item.dropdownItems}
+  setCurrentUser={setCurrentUser} // ✅ pass here
+/>
               ))}
             </nav>
           </div>
 
           {/* User and Logout */}
           <div className="flex items-center space-x-4">
-            <span className="hidden lg:inline text-sm font-medium opacity-90">Hello, {MOCK_USERNAME_ENGLISH}</span>
-            <button 
-              onClick={logOut} 
-              className="flex items-center bg-red-500 hover:bg-red-600 px-4 py-2 rounded-full text-sm font-semibold transition duration-300 shadow-md hover:shadow-lg transform active:scale-95 ring-2 ring-red-400/50"
-            >
-              <LogOut className="w-4 h-4 mr-2" />
-              Logout
-            </button>
+<span className="hidden lg:inline text-sm font-medium opacity-90">
+  Hello, {currentUser ? currentUser.displayName || currentUser.email : "Guest"}
+</span>
+           <button 
+  onClick={async () => {
+    try {
+      await logOut(); // Firebase logout
+      console.log("User logged out successfully");
+      window.location.href = "/login"; // optional redirect
+    } catch (error) {
+      console.error("Error logging out:", error);
+    }
+  }}
+  className="flex items-center bg-red-500 hover:bg-red-600 px-4 py-2 rounded-full text-sm font-semibold transition duration-300 shadow-md hover:shadow-lg transform active:scale-95 ring-2 ring-red-400/50"
+>
+  <LogOut className="w-4 h-4 mr-2" />
+  Logout
+</button>
+
+
           </div>
         </div>
         
