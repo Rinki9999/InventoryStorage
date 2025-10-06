@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from "react-router-dom";
+
 import { logOut } from "../firebase";
 import { Warehouse, Settings, LogOut, ChevronDown, User } from 'lucide-react';
 import { onAuthChange } from "../firebase"; 
@@ -42,48 +44,54 @@ const CampusCard = ({ name, region, imageUrl }) => (
 );
 
 // Component for a Navigation Item with optional Dropdown
-const NavItem = ({ title, icon: Icon, dropdownItems ,setCurrentUser}) => {
+const NavItem = ({ title, icon: Icon, dropdownItems, setCurrentUser }) => {
   const [isOpen, setIsOpen] = useState(false);
 
-  // Function to handle the actual link/action (mocked)
   const handleNavClick = (itemTitle) => {
-    console.log(`Mapsd to: ${itemTitle}`);
-    // You would typically handle routing here
+    console.log(`Maps to: ${itemTitle}`);
   };
 
   useEffect(() => {
-  const unsubscribe = onAuthChange((user) => {
-    if (user) setCurrentUser(user); // set logged in user
-    else setCurrentUser(null); // user logged out
-  });
-
-  return () => unsubscribe(); // cleanup
-}, [setCurrentUser]);
-
+    const unsubscribe = onAuthChange((user) => {
+      if (user) setCurrentUser(user);
+      else setCurrentUser(null);
+    });
+    return () => unsubscribe();
+  }, [setCurrentUser]);
 
   return (
-    <div 
-      className="relative"
-      onMouseEnter={() => setIsOpen(true)}
-      onMouseLeave={() => setIsOpen(false)}
-    >
-      <div 
-        className={`flex items-center p-3 rounded-xl transition-colors duration-200 cursor-pointer text-sm font-semibold ${dropdownItems ? 'hover:bg-teal-700' : 'hover:bg-teal-800 bg-teal-800'}`}
-        onClick={() => dropdownItems ? setIsOpen(!isOpen) : handleNavClick(title)}
+    <div className="relative">
+      {/* 🔹 Button area */}
+      <div
+        className={`flex items-center p-3 rounded-xl transition-colors duration-200 cursor-pointer text-sm font-semibold 
+        ${dropdownItems ? 'hover:bg-teal-700' : 'hover:bg-teal-800 bg-teal-800'}`}
+        onClick={() => setIsOpen((prev) => !prev)} // ✅ Click toggles dropdown
       >
         <Icon className="w-5 h-5 mr-2" />
         {title}
         {dropdownItems && (
-          <ChevronDown className={`w-4 h-4 ml-1 transition-transform duration-200 ${isOpen ? 'rotate-180' : 'rotate-0'}`} />
+          <ChevronDown
+            className={`w-4 h-4 ml-1 transition-transform duration-200 ${
+              isOpen ? 'rotate-180' : 'rotate-0'
+            }`}
+          />
         )}
       </div>
-      
+
+      {/* 🔹 Dropdown Menu */}
       {dropdownItems && (
-        <ul className={`absolute z-20 top-full left-0 mt-3 bg-white text-gray-800 py-2 rounded-xl shadow-2xl min-w-[180px] transition-all duration-300 origin-top ${isOpen ? 'opacity-100 scale-y-100' : 'opacity-0 scale-y-0 pointer-events-none'}`}>
+        <ul
+          className={`absolute z-20 top-full left-0 mt-2 bg-white text-gray-800 py-2 rounded-xl shadow-2xl min-w-[180px] 
+          transition-all duration-300 origin-top 
+          ${isOpen ? 'opacity-100 scale-y-100' : 'opacity-0 scale-y-0 pointer-events-none'}`}
+          onMouseEnter={() => setIsOpen(true)}   // ✅ keeps dropdown open while hovering
+          onMouseLeave={() => setIsOpen(false)}  // ✅ closes only when fully left
+        >
           {dropdownItems.map((item, index) => (
-            <li key={index} 
-                onClick={() => handleNavClick(item)}
-                className="px-4 py-2 hover:bg-teal-50 hover:text-teal-700 transition-colors duration-150 text-sm font-medium cursor-pointer"
+            <li
+              key={index}
+              onClick={() => handleNavClick(item)}
+              className="px-4 py-2 hover:bg-teal-50 hover:text-teal-700 transition-colors duration-150 text-sm font-medium cursor-pointer"
             >
               {item}
             </li>
@@ -94,7 +102,10 @@ const NavItem = ({ title, icon: Icon, dropdownItems ,setCurrentUser}) => {
   );
 };
 
+
 const App = () => {
+  const navigate = useNavigate();
+
   const [currentUser, setCurrentUser] = useState(null);
 useEffect(() => {
     const unsubscribe = onAuthChange((user) => {
@@ -160,11 +171,13 @@ useEffect(() => {
     try {
       await logOut(); // Firebase logout
       console.log("User logged out successfully");
-      window.location.href = "/login"; // optional redirect
+      navigate("/login"); // ✅ React Router redirect
     } catch (error) {
       console.error("Error logging out:", error);
     }
   }}
+
+
   className="flex items-center bg-red-500 hover:bg-red-600 px-4 py-2 rounded-full text-sm font-semibold transition duration-300 shadow-md hover:shadow-lg transform active:scale-95 ring-2 ring-red-400/50"
 >
   <LogOut className="w-4 h-4 mr-2" />
@@ -189,7 +202,7 @@ useEffect(() => {
             <h1 className="text-3xl font-extrabold text-gray-900">
             Welcome to the Campus View
             </h1>
-            <p className="text-gray-500 mt-1">Explore all active Navgurukul campuses.</p>
+            <p className="text-gray-500 mt-1">Discover What Each Campus Holds – From Tech to Taste!</p>
         </div>
 
 
