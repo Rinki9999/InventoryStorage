@@ -1,13 +1,8 @@
+// Dashboard.jsx
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from "react-router-dom";
-
-import { logOut } from "../firebase";
+import { useNavigate, Link } from "react-router-dom"; // <-- Link added here
+import { logOut, onAuthChange } from "../firebase"; // path adjust करो अगर ज़रूरत हो
 import { Warehouse, Settings, LogOut, ChevronDown, User } from 'lucide-react';
-import { onAuthChange } from "../firebase"; 
-
-
-
-
 
 const campuses = [
   { name: "Dantewada", region: "Chhattisgarh", imageUrl: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTwA_D-3McRQVCqgtsbToJflvTGOY7pv8Wob0IDnx6lGsvYMQD8_fJz6R_aipzeTKg_u2c&usqp=CAU" },
@@ -18,9 +13,8 @@ const campuses = [
   { name: "Pune", region: "Maharashtra", imageUrl: "https://lh3.googleusercontent.com/gps-cs-s/AC9h4nq5rJf293eOaMT4c1vUXI6ayKjhO7Zn0XNhs08Whf1GcoyHTkIC-Q_m6qw2HJFinr7BDeUpuzZnyqGipCrTdasITZ2YoTsoksSp2HK6pvfFKr1CWgSLRf18W7D2g9VXSmbOXGa0lw=s680-w680-h510-rw" },
   { name: "Raigarh", region: "Chhattisgarh", imageUrl: "https://www.navgurukul.org/static/media/campus%20photo.160eff25.jpg" },
   { name: "Sarjapur", region: "Karnataka", imageUrl: "https://content.jdmagicbox.com/v2/comp/bangalore/w8/080pxx80.xx80.181203163638.t3w8/catalogue/navgurukul-bangalore-campus-huskur-bangalore-computer-training-insitutes-for-software-diploma-tqjmmkp00i.jpg" },
-  { name: "Udaipur", region: "Rajasthan", imageUrl: "https://lh3.googleusercontent.com/gps-cs-s/AC9h4npRn5v_3dPUDWq_OIfu2i98fQhXYfxAWvcLWAc6_PwcApawKb_2uXZ-NHN70yuMlp4C7Z7egnKSNLICfd0nA00e3Bjw3GEnezakiDFAX7sE4Jz6iJPZR_M-yAkv5Wqiog66-LgG=s680-w680-h510-rw" },
+  { name: "Udaipur", region: "Rajasthan", imageUrl: "https://lh3.googleusercontent.com/gps-cs-s/AC9h4npRn5v_3dPUDWq_OIfu2i98fQhXYfxAWvcLWAc6_PwcApawKb_2uXZ-NHN70yuMlp4C7Z7egnKSNLICfd0nA00e3Bjw3GEnezakiDFAX7sE4Jz6iJPZR_M-yAkv5Wqiog66-LgU=s680-w680-h510-rw" },
 ];
-
 
 const CampusCard = ({ name, region, imageUrl }) => (
   <div className="campus-card bg-white shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 rounded-2xl overflow-hidden cursor-pointer border border-gray-200 group">
@@ -29,6 +23,7 @@ const CampusCard = ({ name, region, imageUrl }) => (
       style={{ backgroundImage: `url('${imageUrl}')` }}
       role="img"
       aria-label={`${name} Campus Image`}
+      // note: background images on div don't fire onError; kept for compatibility with your earlier approach
       onError={(e) => { e.target.style.backgroundImage = 'url(https://placehold.co/600x400/0d9488/ffffff?text=Image+not+available)' }}
     ></div>
     <div className="p-4">
@@ -36,9 +31,13 @@ const CampusCard = ({ name, region, imageUrl }) => (
       <p className="text-sm text-gray-500 mt-1">{region}</p>
     </div>
     <div className="p-4 pt-0 text-right">
-        <button className="text-sm font-bold text-teal-600 hover:text-teal-800 transition-colors bg-teal-50/50 px-3 py-1 rounded-lg">
-            View Details &rarr;
-        </button>
+      {/* ✅ Changed: Button replaced by Link so clicking opens campus assets page */}
+      <Link
+        to={`/campus/${encodeURIComponent(name)}/assets`}
+        className="text-sm font-bold text-teal-600 hover:text-teal-800 transition-colors bg-teal-50/50 px-3 py-1 rounded-lg inline-block"
+      >
+        View Details &rarr;
+      </Link>
     </div>
   </div>
 );
@@ -56,7 +55,7 @@ const NavItem = ({ title, icon: Icon, dropdownItems, setCurrentUser }) => {
       if (user) setCurrentUser(user);
       else setCurrentUser(null);
     });
-    return () => unsubscribe();
+    return () => unsubscribe && unsubscribe();
   }, [setCurrentUser]);
 
   return (
@@ -103,16 +102,16 @@ const NavItem = ({ title, icon: Icon, dropdownItems, setCurrentUser }) => {
 };
 
 
-const App = () => {
+export default function Dashboard() {
   const navigate = useNavigate();
 
   const [currentUser, setCurrentUser] = useState(null);
-useEffect(() => {
+  useEffect(() => {
     const unsubscribe = onAuthChange((user) => {
       if (user) setCurrentUser(user);
       else setCurrentUser(null);
     });
-    return () => unsubscribe();
+    return () => unsubscribe && unsubscribe();
   }, []);
   const navStructure = [
     { 
@@ -223,5 +222,3 @@ useEffect(() => {
     </div>
   );
 };
-
-export default App;
