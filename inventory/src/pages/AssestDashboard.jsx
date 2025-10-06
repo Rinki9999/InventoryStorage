@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 
-// --- Helper Data ---
+
+
+
+
 const initialAssets = [
   { id: 1, name: 'MacBook Pro 16"', category: 'IT', qty: 12, expiry: '2028-11-01', status: 'In Stock', assigned: 'John Doe' },
   { id: 2, name: 'Logitech MX Master 3', category: 'IT', qty: 8, expiry: '-', status: 'Low Stock', assigned: 'Jane Smith' },
@@ -18,7 +21,7 @@ const statsData = [
     { title: 'Expired', value: '8' },
 ];
 
-// --- Sub-components ---
+
 
 const Sidebar = () => (
   <aside className="w-full md:w-64 bg-white p-6 border-r border-gray-200 flex-shrink-0">
