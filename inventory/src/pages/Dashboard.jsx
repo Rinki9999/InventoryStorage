@@ -18,8 +18,8 @@ const campuses = [
 
 const CampusCard = ({ name, region, imageUrl }) => (
   <div className="campus-card bg-white shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 rounded-2xl overflow-hidden cursor-pointer border border-gray-200 group">
-    <div 
-      className="h-40 bg-cover bg-center transition-transform duration-500 group-hover:scale-105" 
+    <div
+      className="h-40 bg-cover bg-center transition-transform duration-500 group-hover:scale-105"
       style={{ backgroundImage: `url('${imageUrl}')` }}
       role="img"
       aria-label={`${name} Campus Image`}
@@ -70,9 +70,8 @@ const NavItem = ({ title, icon: Icon, dropdownItems, setCurrentUser }) => {
         {title}
         {dropdownItems && (
           <ChevronDown
-            className={`w-4 h-4 ml-1 transition-transform duration-200 ${
-              isOpen ? 'rotate-180' : 'rotate-0'
-            }`}
+            className={`w-4 h-4 ml-1 transition-transform duration-200 ${isOpen ? 'rotate-180' : 'rotate-0'
+              }`}
           />
         )}
       </div>
@@ -109,50 +108,51 @@ export default function Dashboard() {
     return () => unsubscribe && unsubscribe();
   }, []);
   const navStructure = [
-    { 
-      title: "Assets", 
-      icon: Warehouse, 
-      dropdownItems: ["IT Equipment", "Food Inventory", "Health and Hygiene"] 
+    {
+      title: "Assets",
+      icon: Warehouse,
+      dropdownItems: ["IT Equipment", "Food Inventory", "Health and Hygiene"]
     },
-    { 
-      title: "Settings", 
-      icon: Settings, 
+    {
+      title: "Settings",
+      icon: Settings,
       dropdownItems: [
-        "System Settings", 
-        "User Management", 
-        "Change Password" 
-      ] 
+        "System Settings",
+        "User Management",
+        "Change Password"
+      ]
     },
   ];
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans">
-      
+
       {/* Header/Navbar (Updated with Teal/Cyan colors) */}
       <header className="sticky top-0 z-50 shadow-lg bg-teal-600 text-white">
         <div className="max-w-14xl mx-auto px-2 sm:px-6 lg:px-8 py-2 flex justify-between items-center">
           {/* Logo and Navigation */}
-           <div className="flex items-center pl-4"> 
-            <img 
-              src="https://admissions.navgurukul.org/assets/logo.71054d69.png" 
+          <div className="flex items-center pl-4">
+            <img
+              src="http://127.0.0.1:5500/logo.png"
               alt="Navgurukul Logo"
               // FIX: Added 'mr-4' (margin right) to add space between the logo and the nav links.
-              className="h-10 md:h-12 w-auto object-contain mr-6" 
+              className="h-10 md:h-12 w-auto object-contain mr-6"
               // Fallback image in case the main logo fails to load
-              onError={(e) => { e.target.onerror = null; e.target.src="https://placehold.co/100x40/ffffff/0d9488?text=NG+Logo" }}
+              onError={(e) => { e.target.onerror = null; e.target.src = "https://placehold.co/100x40/ffffff/0d9488?text=NG+Logo" }}
             />
-            
+
             <nav className="hidden md:flex space-x-3">
               {navStructure.map((item, index) => (
-              
-            
-<NavItem
-  key={index}
-  title={item.title}
-  icon={item.icon}
-  dropdownItems={item.dropdownItems}
-  setCurrentUser={setCurrentUser} // ✅ pass here
-/>
+                // ...
+                // ...
+
+                <NavItem
+                  key={index}
+                  title={item.title}
+                  icon={item.icon}
+                  dropdownItems={item.dropdownItems}
+                  setCurrentUser={setCurrentUser} // ✅ pass here
+                />
               ))}
             </nav>
           </div>
@@ -183,7 +183,7 @@ export default function Dashboard() {
 
           </div>
         </div>
-        
+
         {/* Mobile Navigation Placeholder (Updated color) */}
         <nav className="md:hidden bg-teal-700 text-center py-2 text-sm text-teal-200">
           <p className="opacity-70">Tap Logo for Menu</p>
@@ -192,13 +192,13 @@ export default function Dashboard() {
 
       {/* Main Content Area */}
       <main className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
-        
+
         {/* Heading Section (Enhanced styling for prominence) */}
         <div className="mb-10 p-6 bg-white rounded-2xl shadow-xl border-t-4 border-teal-500">
-            <h1 className="text-3xl font-extrabold text-gray-900">
+          <h1 className="text-3xl font-extrabold text-gray-900">
             Welcome to the Campus View
-            </h1>
-            <p className="text-gray-500 mt-1">Discover What Each Campus Holds – From Tech to Taste!</p>
+          </h1>
+          <p className="text-gray-500 mt-1">Discover What Each Campus Holds – From Tech to Taste!</p>
         </div>
 
 
