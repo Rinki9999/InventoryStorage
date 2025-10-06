@@ -71,7 +71,7 @@ const NavItem = ({ title, icon: Icon, dropdownItems ,setCurrentUser}) => {
         className={`flex items-center p-3 rounded-xl transition-colors duration-200 cursor-pointer text-sm font-semibold ${dropdownItems ? 'hover:bg-teal-700' : 'hover:bg-teal-800 bg-teal-800'}`}
         onClick={() => dropdownItems ? setIsOpen(!isOpen) : handleNavClick(title)}
       >
-        <Icon className="w-5 h-5 mr-2" />
+        <Icon className="w-5 h-5 mr-1" />
         {title}
         {dropdownItems && (
           <ChevronDown className={`w-4 h-4 ml-1 transition-transform duration-200 ${isOpen ? 'rotate-180' : 'rotate-0'}`} />
@@ -79,11 +79,11 @@ const NavItem = ({ title, icon: Icon, dropdownItems ,setCurrentUser}) => {
       </div>
       
       {dropdownItems && (
-        <ul className={`absolute z-20 top-full left-0 mt-3 bg-white text-gray-800 py-2 rounded-xl shadow-2xl min-w-[180px] transition-all duration-300 origin-top ${isOpen ? 'opacity-100 scale-y-100' : 'opacity-0 scale-y-0 pointer-events-none'}`}>
+        <ul className={`absolute z-30 top-full left-0 mt-3 bg-white text-gray-600 py-2 rounded-xl shadow-2xl min-w-[180px] transition-all duration-300 origin-top ${isOpen ? 'opacity-100 scale-y-100' : 'opacity-0 scale-y-0 pointer-events-none'}`}>
           {dropdownItems.map((item, index) => (
             <li key={index} 
                 onClick={() => handleNavClick(item)}
-                className="px-4 py-2 hover:bg-teal-50 hover:text-teal-700 transition-colors duration-150 text-sm font-medium cursor-pointer"
+                className="px-4 py-2 hover:bg-teal-50 hover:text-teal-800 transition-colors duration-150 text-sm font-medium cursor-pointer"
             >
               {item}
             </li>
@@ -125,20 +125,23 @@ useEffect(() => {
       
       {/* Header/Navbar (Updated with Teal/Cyan colors) */}
       <header className="sticky top-0 z-50 shadow-lg bg-teal-600 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex justify-between items-center">
-          
-          {/* Logo (Image replaced 'Navgurukul Inventory' text) */}
-          <div className="flex items-center space-x-8">
+        <div className="max-w-14xl mx-auto px-2 sm:px-6 lg:px-8 py-2 flex justify-between items-center">
+          {/* Logo and Navigation */}
+           <div className="flex items-center pl-4"> 
             <img 
-              src="https://medha.org.in/user-content/media-versions/1400w_x2400h__q_90_c_Navgurukul.jpg" 
-              alt="Navgurukul Logo" 
-              className="h-8 md:h-10 w-auto object-contain bg-white rounded-full p-1 shadow-md" 
+              src="http://127.0.0.1:5500/logo.png" 
+              alt="Navgurukul Logo"
+              // FIX: Added 'mr-4' (margin right) to add space between the logo and the nav links.
+              className="h-10 md:h-12 w-auto object-contain mr-6" 
               // Fallback image in case the main logo fails to load
               onError={(e) => { e.target.onerror = null; e.target.src="https://placehold.co/100x40/ffffff/0d9488?text=NG+Logo" }}
             />
             
-            <nav className="hidden md:flex space-x-1">
+            <nav className="hidden md:flex space-x-3">
               {navStructure.map((item, index) => (
+                 // ...
+               // ...
+            
 <NavItem
   key={index}
   title={item.title}
@@ -151,7 +154,7 @@ useEffect(() => {
           </div>
 
           {/* User and Logout */}
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-10">
 <span className="hidden lg:inline text-sm font-medium opacity-90">
   Hello, {currentUser ? currentUser.displayName || currentUser.email : "Guest"}
 </span>
@@ -167,7 +170,7 @@ useEffect(() => {
   }}
   className="flex items-center bg-red-500 hover:bg-red-600 px-4 py-2 rounded-full text-sm font-semibold transition duration-300 shadow-md hover:shadow-lg transform active:scale-95 ring-2 ring-red-400/50"
 >
-  <LogOut className="w-4 h-4 mr-2" />
+  <LogOut className="w-4 h-4 mr-1" />
   Logout
 </button>
 
