@@ -1,7 +1,7 @@
-// Dashboard.jsx
+
 import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from "react-router-dom"; // <-- Link added here
-import { logOut, onAuthChange } from "../firebase"; // path adjust करो अगर ज़रूरत हो
+import { useNavigate, Link } from "react-router-dom"; 
+import { logOut, onAuthChange } from "../firebase"; 
 import { Warehouse, Settings, LogOut, ChevronDown, User } from 'lucide-react';
 
 const campuses = [
@@ -78,30 +78,20 @@ const NavItem = ({ title, icon: Icon, dropdownItems, setCurrentUser }) => {
       </div>
 
       {/* 🔹 Dropdown Menu */}
-      {dropdownItems && ( muskanPerween
-        <ul className={`absolute z-30 top-full left-0 mt-3 bg-white text-gray-600 py-2 rounded-xl shadow-2xl min-w-[180px] transition-all duration-300 origin-top ${isOpen ? 'opacity-100 scale-y-100' : 'opacity-0 scale-y-0 pointer-events-none'}`}>
-          {dropdownItems.map((item, index) => (
-            <li key={index} 
-                onClick={() => handleNavClick(item)}
-                className="px-4 py-2 hover:bg-teal-50 hover:text-teal-800 transition-colors duration-150 text-sm font-medium cursor-pointer"
-        <ul
-          className={`absolute z-20 top-full left-0 mt-2 bg-white text-gray-800 py-2 rounded-xl shadow-2xl min-w-[180px] 
-          transition-all duration-300 origin-top 
-          ${isOpen ? 'opacity-100 scale-y-100' : 'opacity-0 scale-y-0 pointer-events-none'}`}
-          onMouseEnter={() => setIsOpen(true)}   // ✅ keeps dropdown open while hovering
-          onMouseLeave={() => setIsOpen(false)}  // ✅ closes only when fully left
-        >
-          {dropdownItems.map((item, index) => (
-            <li
-              key={index}
-              onClick={() => handleNavClick(item)}
-              className="px-4 py-2 hover:bg-teal-50 hover:text-teal-700 transition-colors duration-150 text-sm font-medium cursor-pointer"main
-            >
-              {item}
-            </li>
-          ))}
-        </ul>
-      )}
+{dropdownItems && (
+  <ul className={`absolute z-30 top-full left-0 mt-3 bg-white text-gray-600 py-2 rounded-xl shadow-2xl min-w-[180px] transition-all duration-300 origin-top ${isOpen ? 'opacity-100 scale-y-100' : 'opacity-0 scale-y-0 pointer-events-none'}`}>
+    {dropdownItems.map((item, index) => (
+      <li
+        key={index}
+        onClick={() => handleNavClick(item)}
+        className="px-4 py-2 hover:bg-teal-50 hover:text-teal-700 transition-colors duration-150 text-sm font-medium cursor-pointer"
+      >
+        {item}
+      </li>
+    ))}
+  </ul>
+)}
+ 
     </div>
   );
 };
@@ -144,7 +134,7 @@ export default function Dashboard() {
           {/* Logo and Navigation */}
            <div className="flex items-center pl-4"> 
             <img 
-              src="http://127.0.0.1:5500/logo.png" 
+              src="https://admissions.navgurukul.org/assets/logo.71054d69.png" 
               alt="Navgurukul Logo"
               // FIX: Added 'mr-4' (margin right) to add space between the logo and the nav links.
               className="h-10 md:h-12 w-auto object-contain mr-6" 
@@ -154,8 +144,7 @@ export default function Dashboard() {
             
             <nav className="hidden md:flex space-x-3">
               {navStructure.map((item, index) => (
-                 // ...
-               // ...
+              
             
 <NavItem
   key={index}

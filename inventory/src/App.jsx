@@ -3,6 +3,8 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-d
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import { onAuthChange } from "./firebase"; // firebase listener
+import CampusAssetsPage from "./pages/AssestDashboard"; // new page
+
 
 const App = () => {
   const [user, setUser] = useState(null);
@@ -25,7 +27,10 @@ const App = () => {
       <Routes>
         <Route path="/" element={!user ? <Login /> : <Navigate to="/dashboard" />} />
         <Route path="/dashboard" element={user ? <Dashboard /> : <Navigate to="/" />} />
-
+   <Route 
+          path="/campus/:campusName/assets" 
+          element={user ? <CampusAssetsPage /> : <Navigate to="/" />} 
+        />
 
         
       </Routes>
