@@ -1,11 +1,8 @@
+// Dashboard.jsx
 import React, { useState, useEffect } from 'react';
-import { logOut } from "../firebase";
+import { useNavigate, Link } from "react-router-dom"; // <-- Link added here
+import { logOut, onAuthChange } from "../firebase"; // path adjust करो अगर ज़रूरत हो
 import { Warehouse, Settings, LogOut, ChevronDown, User } from 'lucide-react';
-import { onAuthChange } from "../firebase"; 
-
-
-
-
 
 const campuses = [
   { name: "Dantewada", region: "Chhattisgarh", imageUrl: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTwA_D-3McRQVCqgtsbToJflvTGOY7pv8Wob0IDnx6lGsvYMQD8_fJz6R_aipzeTKg_u2c&usqp=CAU" },
@@ -16,9 +13,8 @@ const campuses = [
   { name: "Pune", region: "Maharashtra", imageUrl: "https://lh3.googleusercontent.com/gps-cs-s/AC9h4nq5rJf293eOaMT4c1vUXI6ayKjhO7Zn0XNhs08Whf1GcoyHTkIC-Q_m6qw2HJFinr7BDeUpuzZnyqGipCrTdasITZ2YoTsoksSp2HK6pvfFKr1CWgSLRf18W7D2g9VXSmbOXGa0lw=s680-w680-h510-rw" },
   { name: "Raigarh", region: "Chhattisgarh", imageUrl: "https://www.navgurukul.org/static/media/campus%20photo.160eff25.jpg" },
   { name: "Sarjapur", region: "Karnataka", imageUrl: "https://content.jdmagicbox.com/v2/comp/bangalore/w8/080pxx80.xx80.181203163638.t3w8/catalogue/navgurukul-bangalore-campus-huskur-bangalore-computer-training-insitutes-for-software-diploma-tqjmmkp00i.jpg" },
-  { name: "Udaipur", region: "Rajasthan", imageUrl: "https://lh3.googleusercontent.com/gps-cs-s/AC9h4npRn5v_3dPUDWq_OIfu2i98fQhXYfxAWvcLWAc6_PwcApawKb_2uXZ-NHN70yuMlp4C7Z7egnKSNLICfd0nA00e3Bjw3GEnezakiDFAX7sE4Jz6iJPZR_M-yAkv5Wqiog66-LgG=s680-w680-h510-rw" },
+  { name: "Udaipur", region: "Rajasthan", imageUrl: "https://lh3.googleusercontent.com/gps-cs-s/AC9h4npRn5v_3dPUDWq_OIfu2i98fQhXYfxAWvcLWAc6_PwcApawKb_2uXZ-NHN70yuMlp4C7Z7egnKSNLICfd0nA00e3Bjw3GEnezakiDFAX7sE4Jz6iJPZR_M-yAkv5Wqiog66-LgU=s680-w680-h510-rw" },
 ];
-
 
 const CampusCard = ({ name, region, imageUrl }) => (
   <div className="campus-card bg-white shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 rounded-2xl overflow-hidden cursor-pointer border border-gray-200 group">
@@ -27,6 +23,7 @@ const CampusCard = ({ name, region, imageUrl }) => (
       style={{ backgroundImage: `url('${imageUrl}')` }}
       role="img"
       aria-label={`${name} Campus Image`}
+      // note: background images on div don't fire onError; kept for compatibility with your earlier approach
       onError={(e) => { e.target.style.backgroundImage = 'url(https://placehold.co/600x400/0d9488/ffffff?text=Image+not+available)' }}
     ></div>
     <div className="p-4">
@@ -34,56 +31,71 @@ const CampusCard = ({ name, region, imageUrl }) => (
       <p className="text-sm text-gray-500 mt-1">{region}</p>
     </div>
     <div className="p-4 pt-0 text-right">
-        <button className="text-sm font-bold text-teal-600 hover:text-teal-800 transition-colors bg-teal-50/50 px-3 py-1 rounded-lg">
-            View Details &rarr;
-        </button>
+      {/* ✅ Changed: Button replaced by Link so clicking opens campus assets page */}
+      <Link
+        to={`/campus/${encodeURIComponent(name)}/assets`}
+        className="text-sm font-bold text-teal-600 hover:text-teal-800 transition-colors bg-teal-50/50 px-3 py-1 rounded-lg inline-block"
+      >
+        View Details &rarr;
+      </Link>
     </div>
   </div>
 );
 
 // Component for a Navigation Item with optional Dropdown
-const NavItem = ({ title, icon: Icon, dropdownItems ,setCurrentUser}) => {
+const NavItem = ({ title, icon: Icon, dropdownItems, setCurrentUser }) => {
   const [isOpen, setIsOpen] = useState(false);
 
-  // Function to handle the actual link/action (mocked)
   const handleNavClick = (itemTitle) => {
-    console.log(`Mapsd to: ${itemTitle}`);
-    // You would typically handle routing here
+    console.log(`Maps to: ${itemTitle}`);
   };
 
   useEffect(() => {
-  const unsubscribe = onAuthChange((user) => {
-    if (user) setCurrentUser(user); // set logged in user
-    else setCurrentUser(null); // user logged out
-  });
-
-  return () => unsubscribe(); // cleanup
-}, [setCurrentUser]);
-
+    const unsubscribe = onAuthChange((user) => {
+      if (user) setCurrentUser(user);
+      else setCurrentUser(null);
+    });
+    return () => unsubscribe && unsubscribe();
+  }, [setCurrentUser]);
 
   return (
-    <div 
-      className="relative"
-      onMouseEnter={() => setIsOpen(true)}
-      onMouseLeave={() => setIsOpen(false)}
-    >
-      <div 
-        className={`flex items-center p-3 rounded-xl transition-colors duration-200 cursor-pointer text-sm font-semibold ${dropdownItems ? 'hover:bg-teal-700' : 'hover:bg-teal-800 bg-teal-800'}`}
-        onClick={() => dropdownItems ? setIsOpen(!isOpen) : handleNavClick(title)}
+    <div className="relative">
+      {/* 🔹 Button area */}
+      <div
+        className={`flex items-center p-3 rounded-xl transition-colors duration-200 cursor-pointer text-sm font-semibold 
+        ${dropdownItems ? 'hover:bg-teal-700' : 'hover:bg-teal-800 bg-teal-800'}`}
+        onClick={() => setIsOpen((prev) => !prev)} // ✅ Click toggles dropdown
       >
         <Icon className="w-5 h-5 mr-1" />
         {title}
         {dropdownItems && (
-          <ChevronDown className={`w-4 h-4 ml-1 transition-transform duration-200 ${isOpen ? 'rotate-180' : 'rotate-0'}`} />
+          <ChevronDown
+            className={`w-4 h-4 ml-1 transition-transform duration-200 ${
+              isOpen ? 'rotate-180' : 'rotate-0'
+            }`}
+          />
         )}
       </div>
-      
-      {dropdownItems && (
+
+      {/* 🔹 Dropdown Menu */}
+      {dropdownItems && ( muskanPerween
         <ul className={`absolute z-30 top-full left-0 mt-3 bg-white text-gray-600 py-2 rounded-xl shadow-2xl min-w-[180px] transition-all duration-300 origin-top ${isOpen ? 'opacity-100 scale-y-100' : 'opacity-0 scale-y-0 pointer-events-none'}`}>
           {dropdownItems.map((item, index) => (
             <li key={index} 
                 onClick={() => handleNavClick(item)}
                 className="px-4 py-2 hover:bg-teal-50 hover:text-teal-800 transition-colors duration-150 text-sm font-medium cursor-pointer"
+        <ul
+          className={`absolute z-20 top-full left-0 mt-2 bg-white text-gray-800 py-2 rounded-xl shadow-2xl min-w-[180px] 
+          transition-all duration-300 origin-top 
+          ${isOpen ? 'opacity-100 scale-y-100' : 'opacity-0 scale-y-0 pointer-events-none'}`}
+          onMouseEnter={() => setIsOpen(true)}   // ✅ keeps dropdown open while hovering
+          onMouseLeave={() => setIsOpen(false)}  // ✅ closes only when fully left
+        >
+          {dropdownItems.map((item, index) => (
+            <li
+              key={index}
+              onClick={() => handleNavClick(item)}
+              className="px-4 py-2 hover:bg-teal-50 hover:text-teal-700 transition-colors duration-150 text-sm font-medium cursor-pointer"main
             >
               {item}
             </li>
@@ -94,14 +106,17 @@ const NavItem = ({ title, icon: Icon, dropdownItems ,setCurrentUser}) => {
   );
 };
 
-const App = () => {
+
+export default function Dashboard() {
+  const navigate = useNavigate();
+
   const [currentUser, setCurrentUser] = useState(null);
-useEffect(() => {
+  useEffect(() => {
     const unsubscribe = onAuthChange((user) => {
       if (user) setCurrentUser(user);
       else setCurrentUser(null);
     });
-    return () => unsubscribe();
+    return () => unsubscribe && unsubscribe();
   }, []);
   const navStructure = [
     { 
@@ -163,11 +178,13 @@ useEffect(() => {
     try {
       await logOut(); // Firebase logout
       console.log("User logged out successfully");
-      window.location.href = "/login"; // optional redirect
+      navigate("/login"); // ✅ React Router redirect
     } catch (error) {
       console.error("Error logging out:", error);
     }
   }}
+
+
   className="flex items-center bg-red-500 hover:bg-red-600 px-4 py-2 rounded-full text-sm font-semibold transition duration-300 shadow-md hover:shadow-lg transform active:scale-95 ring-2 ring-red-400/50"
 >
   <LogOut className="w-4 h-4 mr-1" />
@@ -192,7 +209,7 @@ useEffect(() => {
             <h1 className="text-3xl font-extrabold text-gray-900">
             Welcome to the Campus View
             </h1>
-            <p className="text-gray-500 mt-1">Explore all active Navgurukul campuses.</p>
+            <p className="text-gray-500 mt-1">Discover What Each Campus Holds – From Tech to Taste!</p>
         </div>
 
 
@@ -213,5 +230,3 @@ useEffect(() => {
     </div>
   );
 };
-
-export default App;
