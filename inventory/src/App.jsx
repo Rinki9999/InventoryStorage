@@ -6,6 +6,7 @@ import { onAuthChange } from "./firebase"; // firebase listener
 import CampusAssetsPage from "./pages/AssestDashboard"; // new page
 import Helth from './pages/Helth'; // Tumhara Helth component
 import ITDashboard from "./pages/ItDashboard";
+import Food from "./pages/Food"; // New Food component
 
 const App = () => {
   const [user, setUser] = useState(null);
@@ -31,6 +32,8 @@ const App = () => {
         <Route path="/campus/:campusName/assets" element={user ? <CampusAssetsPage /> : <Navigate to="/" />} />
         <Route path="/helth" element={user ? <Helth /> : <Navigate to="/" />} />
         <Route path="/itdashboard" element={user ? <ITDashboard /> : <Navigate to="/" />} />
+        <Route path="/food" element={user ? <Food /> : <Navigate to="/" />} />
+
       </Routes>
     </Router>
   );
