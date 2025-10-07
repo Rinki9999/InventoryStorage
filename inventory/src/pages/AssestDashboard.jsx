@@ -86,6 +86,10 @@ const NavItem = ({ title, icon: Icon, dropdownItems, currentUser, navigate }) =>
     if (itemTitle === "IT Equipment") {
       navigate("/itdashboard"); // ✅ Navigate to ITDashboard page
     }
+    if (itemTitle === "Food Inventory") {
+      navigate("/food");
+    }
+
     // future dropdowns add here
   };
 
