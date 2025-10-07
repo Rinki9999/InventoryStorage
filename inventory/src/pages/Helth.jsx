@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 // Initial medication data
 const initialMedications = [
@@ -41,8 +42,8 @@ const DeleteIcon = () => (
     </svg>
 );
 
-
 export default function MedicationDashboard() {
+  const navigate = useNavigate();
   const [medications, setMedications] = useState(initialMedications);
   const [newMed, setNewMed] = useState({ name: "", qty: "", expiry: "" });
   const [editingMed, setEditingMed] = useState(null);
@@ -56,6 +57,10 @@ export default function MedicationDashboard() {
     }, 3000);
   };
 
+  // Back button
+  const handleBack = () => {
+    navigate("/dashboard"); // dashboard page pe le jayega
+  };
 
   // Status counts
   const totalMedications = medications.length;
@@ -70,7 +75,7 @@ export default function MedicationDashboard() {
       return;
     }
     const newEntry = {
-      id: Date.now(), // Use timestamp for unique ID
+      id: Date.now(),
       ...newMed,
       qty: parseInt(newMed.qty),
     };
@@ -110,6 +115,32 @@ export default function MedicationDashboard() {
                 {notification}
             </div>
         )}
+
+      {/* Back Button and Header */}
+      <div className="p-6">
+        <div className="flex items-center gap-4 mb-6">
+          <button
+            onClick={handleBack}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all"
+          >
+            {/* Left arrow icon */}
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
+            Back
+          </button>
+
+          <h1 className="text-2xl font-bold">Health & Hygiene</h1>
+        </div>
+      </div>
+
       <div className="max-w-7xl mx-auto">
         <header className="mb-8">
             <h1 className="text-4xl font-bold text-gray-800">Medication Dashboard</h1>
