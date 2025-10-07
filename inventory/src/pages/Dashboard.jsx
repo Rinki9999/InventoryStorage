@@ -133,7 +133,7 @@ export default function Dashboard() {
           {/* Logo and Navigation */}
           <div className="flex items-center pl-4">
             <img
-              src="http://127.0.0.1:5500/logo.png"
+              src="https://beamish-paletas-139a19.netlify.app/logo.png"
               alt="Navgurukul Logo"
               // FIX: Added 'mr-4' (margin right) to add space between the logo and the nav links.
               className="h-10 md:h-12 w-auto object-contain mr-6"
