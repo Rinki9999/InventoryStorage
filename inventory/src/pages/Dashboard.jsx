@@ -3,6 +3,9 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from "react-router-dom"; 
 import { logOut, onAuthChange } from "../firebase"; 
 import { Warehouse, Settings, LogOut, ChevronDown, User } from 'lucide-react';
+import AOS from "aos";
+import "aos/dist/aos.css";
+
 
 const campuses = [
   { name: "Dantewada", region: "Chhattisgarh", imageUrl: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTwA_D-3McRQVCqgtsbToJflvTGOY7pv8Wob0IDnx6lGsvYMQD8_fJz6R_aipzeTKg_u2c&usqp=CAU" },
@@ -11,13 +14,17 @@ const campuses = [
   { name: "Jashpur", region: "Chhattisgarh", imageUrl: "https://www.navgurukul.org/static/media/image1.8b36aac1.svg" },
   { name: "Kishanganj", region: "Bihar", imageUrl: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT2OldNcGfoR2jGNaZanrMDS8NdcXXmtupqmquN69T3Pwdyp_6DuOUseYSsQhVn_V42flE&usqp=CAU" },
   { name: "Pune", region: "Maharashtra", imageUrl: "https://lh3.googleusercontent.com/gps-cs-s/AC9h4nq5rJf293eOaMT4c1vUXI6ayKjhO7Zn0XNhs08Whf1GcoyHTkIC-Q_m6qw2HJFinr7BDeUpuzZnyqGipCrTdasITZ2YoTsoksSp2HK6pvfFKr1CWgSLRf18W7D2g9VXSmbOXGa0lw=s680-w680-h510-rw" },
-  { name: "Raigarh", region: "Chhattisgarh", imageUrl: "https://www.navgurukul.org/static/media/campus%20photo.160eff25.jpg" },
+  { name: "Raigarh", region: "Chhattisgarh", imageUrl: "https://gmcraigarh.edu.in/assets/img/home1/s2.jpg" },
   { name: "Sarjapur", region: "Karnataka", imageUrl: "https://content.jdmagicbox.com/v2/comp/bangalore/w8/080pxx80.xx80.181203163638.t3w8/catalogue/navgurukul-bangalore-campus-huskur-bangalore-computer-training-insitutes-for-software-diploma-tqjmmkp00i.jpg" },
   { name: "Udaipur", region: "Rajasthan", imageUrl: "https://lh3.googleusercontent.com/gps-cs-s/AC9h4npRn5v_3dPUDWq_OIfu2i98fQhXYfxAWvcLWAc6_PwcApawKb_2uXZ-NHN70yuMlp4C7Z7egnKSNLICfd0nA00e3Bjw3GEnezakiDFAX7sE4Jz6iJPZR_M-yAkv5Wqiog66-LgU=s680-w680-h510-rw" },
 ];
 
-const CampusCard = ({ name, region, imageUrl }) => (
-  <div className="campus-card bg-white shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 rounded-2xl overflow-hidden cursor-pointer border border-gray-200 group">
+const CampusCard = ({ name, region, imageUrl , index}) => (
+<div
+  data-aos="zoom-in"
+  data-aos-delay={index * 100}
+  className="campus-card bg-white shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 rounded-2xl overflow-hidden cursor-pointer border border-gray-200 group"
+>
     <div
       className="h-40 bg-cover bg-center transition-transform duration-500 group-hover:scale-105"
       style={{ backgroundImage: `url('${imageUrl}')` }}
@@ -45,11 +52,9 @@ const CampusCard = ({ name, region, imageUrl }) => (
 // Component for a Navigation Item with optional Dropdown
 const NavItem = ({ title, icon: Icon, dropdownItems, setCurrentUser }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const ref = React.useRef(null); // ✅ for detecting outside clicks
 
-  const handleNavClick = (itemTitle) => {
-    console.log(`Maps to: ${itemTitle}`);
-  };
-
+  // Firebase Auth listener
   useEffect(() => {
     const unsubscribe = onAuthChange((user) => {
       if (user) setCurrentUser(user);
@@ -58,39 +63,60 @@ const NavItem = ({ title, icon: Icon, dropdownItems, setCurrentUser }) => {
     return () => unsubscribe && unsubscribe();
   }, [setCurrentUser]);
 
+  // AOS animation
+  useEffect(() => {
+    AOS.init({ duration: 1000, once: true, easing: "ease-out-cubic" });
+  }, []);
+
+  // ✅ Detect outside click to close dropdown
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (ref.current && !ref.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
   return (
-    <div className="relative">
-      {/* 🔹 Button area */}
+    <div ref={ref} className="relative">
+      {/* Button area */}
       <div
         className={`flex items-center p-3 rounded-xl transition-colors duration-200 cursor-pointer text-sm font-semibold 
         ${dropdownItems ? 'hover:bg-teal-700' : 'hover:bg-teal-800 bg-teal-800'}`}
-        onClick={() => setIsOpen((prev) => !prev)} // ✅ Click toggles dropdown
+        onClick={() => setIsOpen((prev) => !prev)} // Toggle dropdown
       >
         <Icon className="w-5 h-5 mr-1" />
         {title}
         {dropdownItems && (
           <ChevronDown
-            className={`w-4 h-4 ml-1 transition-transform duration-200 ${isOpen ? 'rotate-180' : 'rotate-0'
-              }`}
+            className={`w-4 h-4 ml-1 transition-transform duration-200 ${isOpen ? 'rotate-180' : 'rotate-0'}`}
           />
         )}
       </div>
 
-      {/* 🔹 Dropdown Menu */}
-{dropdownItems && (
-  <ul className={`absolute z-30 top-full left-0 mt-3 bg-white text-gray-600 py-2 rounded-xl shadow-2xl min-w-[180px] transition-all duration-300 origin-top ${isOpen ? 'opacity-100 scale-y-100' : 'opacity-0 scale-y-0 pointer-events-none'}`}>
-    {dropdownItems.map((item, index) => (
-      <li
-        key={index}
-        onClick={() => handleNavClick(item)}
-        className="px-4 py-2 hover:bg-teal-50 hover:text-teal-700 transition-colors duration-150 text-sm font-medium cursor-pointer"
-      >
-        {item}
-      </li>
-    ))}
-  </ul>
-)}
- 
+      {/* Dropdown menu */}
+      {dropdownItems && (
+        <ul
+          className={`absolute z-30 top-full left-0 mt-3 bg-white text-gray-600 py-2 rounded-xl shadow-2xl min-w-[180px] 
+          transition-all duration-300 origin-top ${
+            isOpen ? 'opacity-100 scale-y-100' : 'opacity-0 scale-y-0 pointer-events-none'
+          }`}
+        >
+          {dropdownItems.map((item, index) => (
+            <li
+              key={index}
+              className="px-4 py-2 hover:bg-teal-50 hover:text-teal-700 transition-colors duration-150 text-sm font-medium cursor-pointer"
+              onClick={() => setIsOpen(false)} // close when user clicks any item
+            >
+              {item}
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 };
@@ -108,11 +134,6 @@ export default function Dashboard() {
     return () => unsubscribe && unsubscribe();
   }, []);
   const navStructure = [
-    {
-      title: "Assets",
-      icon: Warehouse,
-      dropdownItems: ["IT Equipment", "Food Inventory", "Health and Hygiene"]
-    },
     {
       title: "Settings",
       icon: Settings,
@@ -143,8 +164,6 @@ export default function Dashboard() {
 
             <nav className="hidden md:flex space-x-3">
               {navStructure.map((item, index) => (
-                // ...
-                // ...
 
                 <NavItem
                   key={index}
@@ -204,9 +223,10 @@ export default function Dashboard() {
 
         {/* Campus Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-          {campuses.map((campus, index) => (
-            <CampusCard key={index} {...campus} />
-          ))}
+         {campuses.map((campus, index) => (
+  <CampusCard key={index} {...campus} index={index} />
+))}
+
         </div>
       </main>
 
