@@ -33,7 +33,7 @@ const ChartColors = {
   Food: '#ec4899',
 };
 
-const isAssetUrgent = (status) => 
+const isAssetUrgent = (status) =>
   status === 'Low Stock' || status === 'Expired' || status === 'Damaged';
 
 const API_MODEL = 'gemini-2.5-flash-preview-05-20';
@@ -42,22 +42,22 @@ const API_KEY = "";
 
 // --- Utility for API Calls ---
 const retryFetch = async (apiCall, maxRetries = 3) => {
-    for (let i = 0; i < maxRetries; i++) {
-        try {
-            const response = await apiCall();
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            return response;
-        } catch (error) {
-            if (i < maxRetries - 1) {
-                const delay = Math.pow(2, i) * 1000 + Math.random() * 1000;
-                await new Promise(resolve => setTimeout(resolve, delay));
-            } else {
-                throw new Error("API call failed after multiple retries.");
-            }
-        }
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      const response = await apiCall();
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      return response;
+    } catch (error) {
+      if (i < maxRetries - 1) {
+        const delay = Math.pow(2, i) * 1000 + Math.random() * 1000;
+        await new Promise(resolve => setTimeout(resolve, delay));
+      } else {
+        throw new Error("API call failed after multiple retries.");
+      }
     }
+  }
 };
 
 
@@ -83,6 +83,9 @@ const NavItem = ({ title, icon: Icon, dropdownItems, currentUser, navigate }) =>
     if (itemTitle === "Health and Hygiene") {
       navigate("/helth"); // ✅ Navigate to Helth page
     }
+    if (itemTitle === "IT Equipment") {
+      navigate("/itdashboard"); // ✅ Navigate to ITDashboard page
+    }
     // future dropdowns add here
   };
 
@@ -96,9 +99,8 @@ const NavItem = ({ title, icon: Icon, dropdownItems, currentUser, navigate }) =>
         {title}
         {dropdownItems && (
           <ChevronDown
-            className={`w-4 h-4 ml-1 transition-transform duration-200 ${
-              isOpen ? "rotate-180" : "rotate-0"
-            }`}
+            className={`w-4 h-4 ml-1 transition-transform duration-200 ${isOpen ? "rotate-180" : "rotate-0"
+              }`}
           />
         )}
       </div>
@@ -198,53 +200,53 @@ const Navbar = () => {
 
 // --- Modal Component for Recommendations ---
 const RecommendationModal = ({ isOpen, onClose, recommendation, isLoading }) => {
-    if (!isOpen) return null;
+  if (!isOpen) return null;
 
-    return (
-        <div className="fixed inset-0 bg-gray-900 bg-opacity-70 z-50 flex justify-center items-center p-4">
-            <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg transform transition-all scale-100 p-6 md:p-8">
-                <div className="flex justify-between items-start mb-4 border-b pb-3">
-                    <h3 className="text-2xl font-bold text-blue-600">
-                        {recommendation.assetName} Disposal/Repair Plan
-                    </h3>
-                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
-                        <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                    </button>
-                </div>
-
-                {isLoading ? (
-                    <div className="text-center py-10">
-                        <svg className="animate-spin h-8 w-8 text-blue-500 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        <p className="mt-4 text-gray-700 font-medium">Generating smart recommendation from Gemini...</p>
-                    </div>
-                ) : (
-                    <div className="space-y-4 text-gray-700">
-                        <p className="font-semibold text-lg">Status: <span className={`font-bold ${recommendation.status === 'Damaged' ? 'text-orange-500' : 'text-red-500'}`}>{recommendation.status}</span></p>
-                        {recommendation.text ? (
-                            <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 whitespace-pre-wrap">
-                                {recommendation.text}
-                            </div>
-                        ) : (
-                            <div className="text-center text-red-500 py-4">An issue occurred while generating the recommendation. Please try again.</div>
-                        )}
-                        <p className="text-xs text-right text-gray-400 mt-4">Powered by Google Gemini API</p>
-                    </div>
-                )}
-
-                <div className="mt-6 pt-4 border-t flex justify-end">
-                    <button
-                        onClick={onClose}
-                        className="py-2 px-6 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors shadow-md"
-                    >
-                        Close
-                    </button>
-                </div>
-            </div>
+  return (
+    <div className="fixed inset-0 bg-gray-900 bg-opacity-70 z-50 flex justify-center items-center p-4">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg transform transition-all scale-100 p-6 md:p-8">
+        <div className="flex justify-between items-start mb-4 border-b pb-3">
+          <h3 className="text-2xl font-bold text-blue-600">
+            {recommendation.assetName} Disposal/Repair Plan
+          </h3>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
+            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+          </button>
         </div>
-    );
+
+        {isLoading ? (
+          <div className="text-center py-10">
+            <svg className="animate-spin h-8 w-8 text-blue-500 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <p className="mt-4 text-gray-700 font-medium">Generating smart recommendation from Gemini...</p>
+          </div>
+        ) : (
+          <div className="space-y-4 text-gray-700">
+            <p className="font-semibold text-lg">Status: <span className={`font-bold ${recommendation.status === 'Damaged' ? 'text-orange-500' : 'text-red-500'}`}>{recommendation.status}</span></p>
+            {recommendation.text ? (
+              <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 whitespace-pre-wrap">
+                {recommendation.text}
+              </div>
+            ) : (
+              <div className="text-center text-red-500 py-4">An issue occurred while generating the recommendation. Please try again.</div>
+            )}
+            <p className="text-xs text-right text-gray-400 mt-4">Powered by Google Gemini API</p>
+          </div>
+        )}
+
+        <div className="mt-6 pt-4 border-t flex justify-end">
+          <button
+            onClick={onClose}
+            className="py-2 px-6 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors shadow-md"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 
@@ -253,70 +255,70 @@ const RecommendationModal = ({ isOpen, onClose, recommendation, isLoading }) => 
 // ----------------------------------------------------------------------------------
 
 const Sidebar = ({ filters, onFilterChange, onClearFilters }) => {
-    
-    const handleCheckboxChange = (type, value) => {
-        const currentList = filters[type];
-        if (currentList.includes(value)) {
-            // Remove
-            onFilterChange(type, currentList.filter(item => item !== value));
-        } else {
-            // Add
-            onFilterChange(type, [...currentList, value]);
-        }
-    };
 
-    return (
-      <aside className="w-full md:w-64 bg-white p-6 border-r border-gray-200 flex-shrink-0 shadow-2xl">
-        <h3 className="text-2xl font-extrabold text-gray-800 mb-6 border-b pb-2">Filters</h3>
+  const handleCheckboxChange = (type, value) => {
+    const currentList = filters[type];
+    if (currentList.includes(value)) {
+      // Remove
+      onFilterChange(type, currentList.filter(item => item !== value));
+    } else {
+      // Add
+      onFilterChange(type, [...currentList, value]);
+    }
+  };
 
-        <div className="mb-6">
-          <strong className="text-sm font-bold text-gray-700 block mb-3">Category</strong>
-          <div className="space-y-2">
-            {CATEGORIES.map(category => (
-              <label key={category} className="flex items-center text-gray-700 cursor-pointer hover:text-blue-600 transition-colors">
-                <input 
-                    type="checkbox" 
-                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" 
-                    checked={filters.categories.includes(category)}
-                    onChange={() => handleCheckboxChange('categories', category)}
-                />
-                <span className="ml-3">{category}</span>
-              </label>
-            ))}
-          </div>
+  return (
+    <aside className="w-full md:w-64 bg-white p-6 border-r border-gray-200 flex-shrink-0 shadow-2xl">
+      <h3 className="text-2xl font-extrabold text-gray-800 mb-6 border-b pb-2">Filters</h3>
+
+      <div className="mb-6">
+        <strong className="text-sm font-bold text-gray-700 block mb-3">Category</strong>
+        <div className="space-y-2">
+          {CATEGORIES.map(category => (
+            <label key={category} className="flex items-center text-gray-700 cursor-pointer hover:text-blue-600 transition-colors">
+              <input
+                type="checkbox"
+                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                checked={filters.categories.includes(category)}
+                onChange={() => handleCheckboxChange('categories', category)}
+              />
+              <span className="ml-3">{category}</span>
+            </label>
+          ))}
         </div>
+      </div>
 
-        <div className="mb-6">
-          <strong className="text-sm font-bold text-gray-700 block mb-3">Status</strong>
-          <div className="space-y-2">
-            {STATUSES.map(status => (
-              <label key={status} className="flex items-center text-gray-700 cursor-pointer hover:text-blue-600 transition-colors">
-                <input 
-                    type="checkbox" 
-                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" 
-                    checked={filters.statuses.includes(status)}
-                    onChange={() => handleCheckboxChange('statuses', status)}
-                />
-                <span className="ml-3">{status}</span>
-              </label>
-            ))}
-          </div>
+      <div className="mb-6">
+        <strong className="text-sm font-bold text-gray-700 block mb-3">Status</strong>
+        <div className="space-y-2">
+          {STATUSES.map(status => (
+            <label key={status} className="flex items-center text-gray-700 cursor-pointer hover:text-blue-600 transition-colors">
+              <input
+                type="checkbox"
+                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                checked={filters.statuses.includes(status)}
+                onChange={() => handleCheckboxChange('statuses', status)}
+              />
+              <span className="ml-3">{status}</span>
+            </label>
+          ))}
         </div>
+      </div>
 
-        {/* Removed "Apply Filters" button since filtering is instant */}
-        <button 
-            onClick={onClearFilters}
-            className="w-full mt-2 py-2 px-4 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300 transition-colors duration-200"
-        >
-            Clear All Filters
-        </button>
-      </aside>
-    );
+      {/* Removed "Apply Filters" button since filtering is instant */}
+      <button
+        onClick={onClearFilters}
+        className="w-full mt-2 py-2 px-4 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300 transition-colors duration-200"
+      >
+        Clear All Filters
+      </button>
+    </aside>
+  );
 };
 
 // --- StatsCard Component ---
 const StatsCard = ({ title, value, color }) => (
-  <div className="bg-white p-5 rounded-xl shadow-xl border border-gray-100"> 
+  <div className="bg-white p-5 rounded-xl shadow-xl border border-gray-100">
     <div className="text-base font-medium text-gray-500">{title}</div>
     <div className={`text-4xl font-extrabold mt-1 ${color || 'text-gray-800'}`}>{value}</div>
   </div>
@@ -325,7 +327,7 @@ const StatsCard = ({ title, value, color }) => (
 
 // --- AssetsTable Component ---
 const AssetsTable = ({ assets = [] }) => {
-    
+
   const getStatusBadge = (status) => {
     switch (status) {
       case 'In Stock': return 'bg-green-100 text-green-800';
@@ -336,7 +338,7 @@ const AssetsTable = ({ assets = [] }) => {
       default: return 'bg-gray-100 text-gray-800';
     }
   };
-  
+
   return (
     <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-2xl border border-gray-100 mt-6">
       <h4 className="text-2xl font-bold text-gray-800 mb-4">Full Inventory List ({assets.length} items)</h4>
@@ -384,170 +386,170 @@ const AssetsTable = ({ assets = [] }) => {
 // ----------------------------------------------------------------------------------
 
 const CategoryDistributionChart = ({ assets }) => {
-    // Simple logic to calculate category quantities for visualization
-    const categoryData = useMemo(() => {
-        const counts = assets.reduce((acc, asset) => {
-            if (asset.status === 'In Stock' || asset.status === 'Low Stock') {
-                acc[asset.category] = (acc[asset.category] || 0) + asset.qty;
-            }
-            return acc;
-        }, {});
+  // Simple logic to calculate category quantities for visualization
+  const categoryData = useMemo(() => {
+    const counts = assets.reduce((acc, asset) => {
+      if (asset.status === 'In Stock' || asset.status === 'Low Stock') {
+        acc[asset.category] = (acc[asset.category] || 0) + asset.qty;
+      }
+      return acc;
+    }, {});
 
-        const totalQty = Object.values(counts).reduce((sum, qty) => sum + qty, 0);
-        let currentAngle = 0;
+    const totalQty = Object.values(counts).reduce((sum, qty) => sum + qty, 0);
+    let currentAngle = 0;
 
-        // Calculate segment percentage and start/end angles for conic gradient
-        return Object.keys(counts).map(category => {
-            const qty = counts[category];
-            const percent = totalQty > 0 ? ((qty / totalQty) * 100) : 0;
-            const startAngle = currentAngle;
-            currentAngle += (percent * 3.6); // 360 / 100 * percent
-            
-            return {
-                name: category,
-                qty: qty,
-                color: ChartColors[category] || '#9ca3af',
-                percent: percent.toFixed(0),
-                startAngle: startAngle,
-                endAngle: currentAngle
-            };
-        }).sort((a, b) => b.qty - a.qty);
-    }, [assets]);
+    // Calculate segment percentage and start/end angles for conic gradient
+    return Object.keys(counts).map(category => {
+      const qty = counts[category];
+      const percent = totalQty > 0 ? ((qty / totalQty) * 100) : 0;
+      const startAngle = currentAngle;
+      currentAngle += (percent * 3.6); // 360 / 100 * percent
 
-    // Constructing the dynamic conic gradient string
-    const gradientString = categoryData.map(item => `${item.color} ${item.startAngle}deg ${item.endAngle}deg`).join(', ');
+      return {
+        name: category,
+        qty: qty,
+        color: ChartColors[category] || '#9ca3af',
+        percent: percent.toFixed(0),
+        startAngle: startAngle,
+        endAngle: currentAngle
+      };
+    }).sort((a, b) => b.qty - a.qty);
+  }, [assets]);
 
-    // Tailwind CSS animation for subtle rotation
-    const rotationStyle = {
-        animation: 'spin-subtle 20s linear infinite',
-        backgroundImage: `conic-gradient(${gradientString})`,
-    };
+  // Constructing the dynamic conic gradient string
+  const gradientString = categoryData.map(item => `${item.color} ${item.startAngle}deg ${item.endAngle}deg`).join(', ');
 
-    // Custom spin keyframes (must be defined in a <style> tag or globally, adding here for completeness)
-    const customStyles = `
+  // Tailwind CSS animation for subtle rotation
+  const rotationStyle = {
+    animation: 'spin-subtle 20s linear infinite',
+    backgroundImage: `conic-gradient(${gradientString})`,
+  };
+
+  // Custom spin keyframes (must be defined in a <style> tag or globally, adding here for completeness)
+  const customStyles = `
         @keyframes spin-subtle {
             from { transform: rotate(0deg); }
             to { transform: rotate(360deg); }
         }
     `;
-    
-    return (
-        <div className="bg-white p-5 rounded-xl shadow-xl border border-gray-100 w-full">
-            <style>{customStyles}</style>
-            <h4 className="text-xl font-bold text-gray-800 mb-4">Category-wise Stock Distribution</h4>
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-6 py-4">
-                <div className="w-32 h-32 flex items-center justify-center relative flex-shrink-0">
-                    <div className="w-full h-full rounded-full bg-gray-200 border-4 border-gray-100 overflow-hidden relative shadow-inner">
-                        <div 
-                            style={rotationStyle} 
-                            className="w-full h-full transition-transform duration-500"
-                        >
-                            {/* Inner circle to make it a Doughnut chart */}
-                            <div className="absolute inset-0 m-6 bg-white rounded-full"></div> 
-                        </div>
-                    </div>
-                </div>
 
-                <div className="flex-1 w-full sm:w-auto space-y-2">
-                    {categoryData.slice(0, 5).map(item => (
-                        <div key={item.name} className="flex items-center text-base text-gray-700 justify-between">
-                            <div className="flex items-center">
-                                <div className="flex-shrink-0 w-3 h-3 rounded-full mr-3" style={{ backgroundColor: item.color }}></div>
-                                <span className="font-medium">{item.name}</span>
-                            </div>
-                            <span className="font-bold text-gray-900">{item.percent}%</span>
-                        </div>
-                    ))}
-                </div>
+  return (
+    <div className="bg-white p-5 rounded-xl shadow-xl border border-gray-100 w-full">
+      <style>{customStyles}</style>
+      <h4 className="text-xl font-bold text-gray-800 mb-4">Category-wise Stock Distribution</h4>
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-6 py-4">
+        <div className="w-32 h-32 flex items-center justify-center relative flex-shrink-0">
+          <div className="w-full h-full rounded-full bg-gray-200 border-4 border-gray-100 overflow-hidden relative shadow-inner">
+            <div
+              style={rotationStyle}
+              className="w-full h-full transition-transform duration-500"
+            >
+              {/* Inner circle to make it a Doughnut chart */}
+              <div className="absolute inset-0 m-6 bg-white rounded-full"></div>
             </div>
+          </div>
         </div>
-    );
+
+        <div className="flex-1 w-full sm:w-auto space-y-2">
+          {categoryData.slice(0, 5).map(item => (
+            <div key={item.name} className="flex items-center text-base text-gray-700 justify-between">
+              <div className="flex items-center">
+                <div className="flex-shrink-0 w-3 h-3 rounded-full mr-3" style={{ backgroundColor: item.color }}></div>
+                <span className="font-medium">{item.name}</span>
+              </div>
+              <span className="font-bold text-gray-900">{item.percent}%</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
 };
 
 // --- UrgentAlertsList Component ---
 const UrgentAlertsList = ({ assets, generateRecommendation, isGenerating }) => {
-    const urgentItems = assets.filter(a => isAssetUrgent(a.status));
-    
-    const lowStockAlerts = urgentItems.filter(a => a.status === 'Low Stock');
-    const disposalAlerts = urgentItems.filter(a => a.status === 'Expired' || a.status === 'Damaged');
+  const urgentItems = assets.filter(a => isAssetUrgent(a.status));
 
-    const assetToAnalyze = disposalAlerts.length > 0 ? disposalAlerts[0] : null;
+  const lowStockAlerts = urgentItems.filter(a => a.status === 'Low Stock');
+  const disposalAlerts = urgentItems.filter(a => a.status === 'Expired' || a.status === 'Damaged');
 
-    return (
-        <div className="bg-white p-5 rounded-xl shadow-xl border border-gray-100 w-full">
-            <h4 className="text-xl font-bold text-gray-800 mb-4 flex items-center whitespace-nowrap overflow-hidden text-ellipsis">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-red-500 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                Urgent Alerts (Alarm)
-            </h4>
+  const assetToAnalyze = disposalAlerts.length > 0 ? disposalAlerts[0] : null;
 
-            {urgentItems.length === 0 ? (
-                <div className="text-gray-500 text-center py-6 border-t border-gray-200 mt-4">No Urgent Alerts. Everything is Fine!</div>
-            ) : (
-                <div className="space-y-4 pt-2 border-t border-gray-100">
-                    {lowStockAlerts.length > 0 && (
-                        <div className="bg-yellow-50 p-4 rounded-xl border border-yellow-300">
-                            <p className="font-semibold text-gray-800 mb-2">Low Stock ({lowStockAlerts.length} item)</p>
-                            <ul className="list-disc ml-5 text-sm text-gray-700 space-y-1">
-                                {lowStockAlerts.slice(0, 3).map(item => (
-                                    <li key={item.id} className="break-words">
-                                        {/* REMOVED REDUNDANT CUSTOM BULLET SPAN */}
-                                        {item.name} (Qty: {item.qty})
-                                    </li>
-                                ))}
-                                {lowStockAlerts.length > 3 && (
-                                     <li className="font-medium text-gray-700">and {lowStockAlerts.length - 3} more items...</li>
-                                )}
-                            </ul>
-                        </div>
-                    )}
+  return (
+    <div className="bg-white p-5 rounded-xl shadow-xl border border-gray-100 w-full">
+      <h4 className="text-xl font-bold text-gray-800 mb-4 flex items-center whitespace-nowrap overflow-hidden text-ellipsis">
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-red-500 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        Urgent Alerts (Alarm)
+      </h4>
 
-                    {disposalAlerts.length > 0 && (
-                        <div className="bg-red-50 p-4 rounded-xl border border-red-300">
-                            <p className="font-semibold text-gray-800 mb-2">Expired/Damaged ({disposalAlerts.length} item)</p>
-                            <ul className="list-disc ml-5 text-sm text-gray-700 space-y-1">
-                                {disposalAlerts.slice(0, 3).map(item => (
-                                    <li key={item.id} className="break-words">
-                                        {/* REMOVED REDUNDANT CUSTOM BULLET SPAN */}
-                                        {item.name} ({item.status})
-                                    </li>
-                                ))}
-                                {disposalAlerts.length > 3 && (
-                                     <li className="font-medium text-gray-700">and {disposalAlerts.length - 3} more items...</li>
-                                )}
-                            </ul>
-                        </div>
-                    )}
-                     
-                     <div className="text-right pt-4 flex flex-col sm:flex-row justify-end items-end gap-2">
-                        {assetToAnalyze && (
-                            <button 
-                                onClick={() => generateRecommendation(assetToAnalyze)}
-                                disabled={isGenerating}
-                                className={`text-sm font-bold py-2 px-3 rounded-lg transition-colors duration-200 shadow-md flex items-center justify-center ${isGenerating ? 'bg-gray-400 text-gray-700 cursor-not-allowed' : 'bg-blue-500 text-white hover:bg-blue-600'}`}
-                            >
-                                {isGenerating ? (
-                                    <>
-                                        <svg className="animate-spin h-5 w-5 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                        </svg>
-                                        Generating...
-                                    </>
-                                ) : (
-                                    <>
-                                        Generate Disposal Plan ✨
-                                    </>
-                                )}
-                            </button>
-                        )}
-                        <button className="text-blue-600 text-sm font-medium hover:underline py-2">View All Alerts</button>
-                    </div>
-                </div>
+      {urgentItems.length === 0 ? (
+        <div className="text-gray-500 text-center py-6 border-t border-gray-200 mt-4">No Urgent Alerts. Everything is Fine!</div>
+      ) : (
+        <div className="space-y-4 pt-2 border-t border-gray-100">
+          {lowStockAlerts.length > 0 && (
+            <div className="bg-yellow-50 p-4 rounded-xl border border-yellow-300">
+              <p className="font-semibold text-gray-800 mb-2">Low Stock ({lowStockAlerts.length} item)</p>
+              <ul className="list-disc ml-5 text-sm text-gray-700 space-y-1">
+                {lowStockAlerts.slice(0, 3).map(item => (
+                  <li key={item.id} className="break-words">
+                    {/* REMOVED REDUNDANT CUSTOM BULLET SPAN */}
+                    {item.name} (Qty: {item.qty})
+                  </li>
+                ))}
+                {lowStockAlerts.length > 3 && (
+                  <li className="font-medium text-gray-700">and {lowStockAlerts.length - 3} more items...</li>
+                )}
+              </ul>
+            </div>
+          )}
+
+          {disposalAlerts.length > 0 && (
+            <div className="bg-red-50 p-4 rounded-xl border border-red-300">
+              <p className="font-semibold text-gray-800 mb-2">Expired/Damaged ({disposalAlerts.length} item)</p>
+              <ul className="list-disc ml-5 text-sm text-gray-700 space-y-1">
+                {disposalAlerts.slice(0, 3).map(item => (
+                  <li key={item.id} className="break-words">
+                    {/* REMOVED REDUNDANT CUSTOM BULLET SPAN */}
+                    {item.name} ({item.status})
+                  </li>
+                ))}
+                {disposalAlerts.length > 3 && (
+                  <li className="font-medium text-gray-700">and {disposalAlerts.length - 3} more items...</li>
+                )}
+              </ul>
+            </div>
+          )}
+
+          <div className="text-right pt-4 flex flex-col sm:flex-row justify-end items-end gap-2">
+            {assetToAnalyze && (
+              <button
+                onClick={() => generateRecommendation(assetToAnalyze)}
+                disabled={isGenerating}
+                className={`text-sm font-bold py-2 px-3 rounded-lg transition-colors duration-200 shadow-md flex items-center justify-center ${isGenerating ? 'bg-gray-400 text-gray-700 cursor-not-allowed' : 'bg-blue-500 text-white hover:bg-blue-600'}`}
+              >
+                {isGenerating ? (
+                  <>
+                    <svg className="animate-spin h-5 w-5 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    Generate Disposal Plan ✨
+                  </>
+                )}
+              </button>
             )}
+            <button className="text-blue-600 text-sm font-medium hover:underline py-2">View All Alerts</button>
+          </div>
         </div>
-    );
+      )}
+    </div>
+  );
 };
 
 
@@ -558,11 +560,11 @@ const UrgentAlertsList = ({ assets, generateRecommendation, isGenerating }) => {
 export default function App() {
   const [assets] = useState(initialAssets); // Assets remain constant
   const [activeView, setActiveView] = useState({ view: 'dashboard', context: null });
-  
+
   // State for Sidebar Filters
   const [filters, setFilters] = useState({
-      categories: [], // e.g., ['IT', 'Health']
-      statuses: []    // e.g., ['Low Stock', 'Expired']
+    categories: [], // e.g., ['IT', 'Health']
+    statuses: []    // e.g., ['Low Stock', 'Expired']
   });
 
   // State for Gemini Feature
@@ -572,29 +574,29 @@ export default function App() {
 
   // Filter Handler
   const handleFilterChange = (type, newValues) => {
-      setFilters(prev => ({ ...prev, [type]: newValues }));
+    setFilters(prev => ({ ...prev, [type]: newValues }));
   };
 
   const handleClearFilters = () => {
-      setFilters({ categories: [], statuses: [] });
+    setFilters({ categories: [], statuses: [] });
   };
-  
+
   // ⭐️ Memoized Filtering Logic
   const filteredAssets = useMemo(() => {
     return assets.filter(asset => {
-        const categoryMatch = filters.categories.length === 0 || filters.categories.includes(asset.category);
-        const statusMatch = filters.statuses.length === 0 || filters.statuses.includes(asset.status);
-        return categoryMatch && statusMatch;
+      const categoryMatch = filters.categories.length === 0 || filters.categories.includes(asset.category);
+      const statusMatch = filters.statuses.length === 0 || filters.statuses.includes(asset.status);
+      return categoryMatch && statusMatch;
     });
   }, [assets, filters.categories, filters.statuses]);
 
-  
+
   // Placeholder component for CampusAssetsPage
   const CampusAssetsPage = ({ campusName }) => (
     <div className="p-8">
-        {/* Removed redundant Back button: it is now handled in the main component header */}
-        <h2 className="text-3xl font-bold">Assets for {campusName}</h2>
-        <p className="mt-4 p-4 bg-yellow-100 rounded">Asset list and details for this specific campus would load here.</p>
+      {/* Removed redundant Back button: it is now handled in the main component header */}
+      <h2 className="text-3xl font-bold">Assets for {campusName}</h2>
+      <p className="mt-4 p-4 bg-yellow-100 rounded">Asset list and details for this specific campus would load here.</p>
     </div>
   );
 
@@ -607,44 +609,44 @@ export default function App() {
 
     // Updated prompt to request English response
     const userQuery = `You are an Inventory Management Assistant. For the asset named: ${asset.name} in the category: ${asset.category} which has a status of: ${asset.status} and quantity: ${asset.qty}, generate a concise, two-paragraph recommendation. The first paragraph should summarize the issue and the second paragraph should suggest the next steps, such as 'Scrap and Replace', 'Repair Quote', or 'Immediate Disposal', along with a brief reason. Respond only with the recommendation text in English (simple and professional tone).`;
-    
+
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${API_MODEL}:generateContent?key=${API_KEY}`;
-    
+
     const payload = {
-        contents: [{ parts: [{ text: userQuery }] }],
-        systemInstruction: {
-             parts: [{ text: "Act as a professional inventory manager." }]
-        },
+      contents: [{ parts: [{ text: userQuery }] }],
+      systemInstruction: {
+        parts: [{ text: "Act as a professional inventory manager." }]
+      },
     };
 
     try {
-        const response = await retryFetch(() => 
-            fetch(apiUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            })
-        );
-        
-        const result = await response.json();
-        const generatedText = result.candidates?.[0]?.content?.parts?.[0]?.text || 
-                             "Sorry, the recommendation could not be generated. Server error.";
+      const response = await retryFetch(() =>
+        fetch(apiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        })
+      );
 
-        setRecommendation({
-            assetName: asset.name, 
-            text: generatedText, 
-            status: asset.status 
-        });
+      const result = await response.json();
+      const generatedText = result.candidates?.[0]?.content?.parts?.[0]?.text ||
+        "Sorry, the recommendation could not be generated. Server error.";
+
+      setRecommendation({
+        assetName: asset.name,
+        text: generatedText,
+        status: asset.status
+      });
 
     } catch (error) {
-        console.error("Gemini API call failed:", error);
-        setRecommendation({
-            assetName: asset.name, 
-            text: "The recommendation could not be generated due to a network error. Please check your internet connection.", 
-            status: asset.status 
-        });
+      console.error("Gemini API call failed:", error);
+      setRecommendation({
+        assetName: asset.name,
+        text: "The recommendation could not be generated due to a network error. Please check your internet connection.",
+        status: asset.status
+      });
     } finally {
-        setIsGenerating(false);
+      setIsGenerating(false);
     }
   };
 
@@ -660,11 +662,11 @@ export default function App() {
       if (asset.status === 'In Stock' || asset.status === 'Low Stock') {
         totalStockQty += asset.qty;
       }
-      
+
       if (asset.status === 'Out of Stock' || asset.qty === 0) {
         outOfStockCount += 1;
       }
-      
+
       if (asset.status === 'Low Stock') {
         lowStockAlerts += 1;
       }
@@ -676,9 +678,9 @@ export default function App() {
 
     return [
       { title: 'Total Stock Qty', value: totalStockQty.toLocaleString(), color: 'text-green-600' },
-      { title: 'Out of Stock', value: outOfStockCount.toLocaleString(), color: 'text-blue-600' }, 
-      { title: 'Low Stock Alerts', value: lowStockAlerts.toLocaleString(), color: 'text-yellow-600' }, 
-      { title: 'Damaged / Expired Qty', value: expiredDamagedQty.toLocaleString(), color: 'text-red-600' }, 
+      { title: 'Out of Stock', value: outOfStockCount.toLocaleString(), color: 'text-blue-600' },
+      { title: 'Low Stock Alerts', value: lowStockAlerts.toLocaleString(), color: 'text-yellow-600' },
+      { title: 'Damaged / Expired Qty', value: expiredDamagedQty.toLocaleString(), color: 'text-red-600' },
     ];
   }, [filteredAssets]);
 
@@ -686,86 +688,86 @@ export default function App() {
   const handleBackToDashboard = () => {
     setActiveView({ view: 'dashboard', context: null });
   };
-  
+
   return (
     <div className="bg-gray-100 h-screen font-sans text-gray-900 overflow-hidden">
-        
-        <Navbar />
+
+      <Navbar />
 
       <div className="flex flex-col md:flex-row h-full">
         {/* Pass filter state and handlers to Sidebar */}
-        <Sidebar 
-            filters={filters}
-            onFilterChange={handleFilterChange}
-            onClearFilters={handleClearFilters}
+        <Sidebar
+          filters={filters}
+          onFilterChange={handleFilterChange}
+          onClearFilters={handleClearFilters}
         />
-        <main className="flex-1 overflow-y-auto max-h-full min-w-0"> 
-          
+        <main className="flex-1 overflow-y-auto max-h-full min-w-0">
+
           <div className="p-4 pt-6 sm:p-6 md:p-8">
-            
+
             {/* ⭐️ UPDATED: Conditional Back Button/Icon next to Title */}
             <div className="flex items-center mb-6 border-b pb-2">
-                {activeView.view !== 'dashboard' && (
-                    <button 
-                        onClick={handleBackToDashboard} 
-                        className="flex items-center text-gray-500 hover:text-blue-600 mr-3 p-1 rounded-full transition duration-150 active:scale-95"
-                        aria-label="Back to Dashboard"
-                    >
-                        {/* Left Arrow SVG Icon */}
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                        </svg>
-                    </button>
-                )}
-                <h1 className="text-3xl font-extrabold text-gray-900 flex-grow">
-                    Kishanganj Dashboard
-                </h1>
+              {activeView.view !== 'dashboard' && (
+                <button
+                  onClick={handleBackToDashboard}
+                  className="flex items-center text-gray-500 hover:text-blue-600 mr-3 p-1 rounded-full transition duration-150 active:scale-95"
+                  aria-label="Back to Dashboard"
+                >
+                  {/* Left Arrow SVG Icon */}
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                  </svg>
+                </button>
+              )}
+              <h1 className="text-3xl font-extrabold text-gray-900 flex-grow">
+                Kishanganj Dashboard
+              </h1>
             </div>
-          
+
             {activeView.view === 'dashboard' ? (
-             <div className="pt-2"> 
-                
+              <div className="pt-2">
+
                 {/* 1. Stats Cards Row (Pass filteredAssets-based stats) */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                    {dashboardStats.map(stat => (
-                        <StatsCard 
-                            key={stat.title} 
-                            title={stat.title} 
-                            value={stat.value} 
-                            color={stat.color} 
-                        />
-                    ))}
+                  {dashboardStats.map(stat => (
+                    <StatsCard
+                      key={stat.title}
+                      title={stat.title}
+                      value={stat.value}
+                      color={stat.color}
+                    />
+                  ))}
                 </div>
-                
+
                 {/* 2. Charts and Alerts Row (Pass filteredAssets) */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
                   <CategoryDistributionChart assets={filteredAssets} />
-                  <UrgentAlertsList 
-                    assets={filteredAssets} 
+                  <UrgentAlertsList
+                    assets={filteredAssets}
                     generateRecommendation={generateAssetRecommendation}
                     isGenerating={isGenerating}
                   />
                 </div>
-                
+
                 {/* 3. Assets Table (Pass filteredAssets) */}
                 <div className="w-full">
-                   <AssetsTable assets={filteredAssets} />
+                  <AssetsTable assets={filteredAssets} />
                 </div>
-                
+
                 {/* Recommendation Modal */}
                 <RecommendationModal
-                    isOpen={isModalOpen}
-                    onClose={() => setIsModalOpen(false)}
-                    recommendation={recommendation}
-                    isLoading={isGenerating}
+                  isOpen={isModalOpen}
+                  onClose={() => setIsModalOpen(false)}
+                  recommendation={recommendation}
+                  isLoading={isGenerating}
                 />
 
-             </div>
-          ) : (
-             <CampusAssetsPage 
-                campusName={activeView.context.campusName || "Selected Campus"} 
-             />
-          )}
+              </div>
+            ) : (
+              <CampusAssetsPage
+                campusName={activeView.context.campusName || "Selected Campus"}
+              />
+            )}
           </div>
         </main>
       </div>
