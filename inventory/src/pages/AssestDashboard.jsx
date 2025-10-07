@@ -1,21 +1,9 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Warehouse, Settings, LogOut, ChevronDown } from 'lucide-react';
+import { useNavigate, Link } from 'react-router-dom';
+import { logOut, onAuthChange } from '../firebase'; // replace path with actual firebase config file
 
-// ==============================================================================
-// ⚠️ MOCK IMPORTS
-// ==============================================================================
-// Mock imports for React Router functions used by Navbar
-const useNavigate = () => (path) => console.log(`MOCK: Navigating to: ${path}`);
-const Link = (props) => <a href={props.to} {...props} onClick={(e) => { e.preventDefault(); console.log(`MOCK: Link clicked: ${props.to}`); }}>{props.children}</a>;
-// Mock imports for Firebase functions used by Navbar
-const logOut = async () => console.log("MOCK: User logged out");
-const onAuthChange = (callback) => { 
-  // MOCK: This effect simulates setting a user on load
-  const user = { uid: 'user123', displayName: 'Admin User', email: 'admin@example.com' };
-  callback(user);
-  return () => console.log("MOCK: Auth listener removed");
-};
-// ==============================================================================
+
 
 // --- Initial Data and Constants ---
 
@@ -73,59 +61,55 @@ const retryFetch = async (apiCall, maxRetries = 3) => {
 };
 
 
-// ----------------------------------------------------------------------------------
-// 1. NavItem Component: Dropdown Logic with Outside Click
-// ----------------------------------------------------------------------------------
-
-const NavItem = ({ title, icon: Icon, dropdownItems, currentUser }) => {
+const NavItem = ({ title, icon: Icon, dropdownItems, currentUser, navigate }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const dropdownRef = useRef(null); // Ref to detect clicks outside
+  const dropdownRef = useRef(null);
 
-  // useEffect for outside click detection
+  // Outside click close
   useEffect(() => {
     function handleClickOutside(event) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setIsOpen(false);
       }
     }
-    // Bind the event listener
     document.addEventListener("mousedown", handleClickOutside);
     return () => {
-      // Unbind the event listener on cleanup
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [dropdownRef]);
+  }, []);
 
   const handleNavClick = (itemTitle) => {
-    console.log(`Maps to: ${itemTitle}`);
-    setIsOpen(false); // Close dropdown after internal click
+    setIsOpen(false);
+    if (itemTitle === "Health and Hygiene") {
+      navigate("/helth"); // ✅ Navigate to Helth page
+    }
+    // future dropdowns add here
   };
 
   return (
-    <div className="relative" ref={dropdownRef}> {/* Attach ref here */}
-      {/* 🔹 Button area */}
+    <div className="relative" ref={dropdownRef}>
       <div
-        className={`flex items-center p-3 rounded-xl transition-colors duration-200 cursor-pointer text-sm font-semibold 
-        ${dropdownItems ? 'hover:bg-teal-700' : 'hover:bg-teal-800 bg-teal-800'}`}
-        onClick={() => setIsOpen((prev) => !prev)}
+        className={`flex items-center p-3 rounded-xl cursor-pointer text-sm font-semibold hover:bg-teal-700`}
+        onClick={() => setIsOpen(!isOpen)}
       >
         <Icon className="w-5 h-5 mr-1" />
         {title}
         {dropdownItems && (
           <ChevronDown
-            className={`w-4 h-4 ml-1 transition-transform duration-200 ${isOpen ? 'rotate-180' : 'rotate-0'}`}
+            className={`w-4 h-4 ml-1 transition-transform duration-200 ${
+              isOpen ? "rotate-180" : "rotate-0"
+            }`}
           />
         )}
       </div>
 
-      {/* 🔹 Dropdown Menu */}
-      {dropdownItems && (
-        <ul className={`absolute z-30 top-full left-0 mt-3 bg-white text-gray-600 py-2 rounded-xl shadow-2xl min-w-[180px] transition-all duration-300 origin-top ${isOpen ? 'opacity-100 scale-y-100' : 'opacity-0 scale-y-0 pointer-events-none'}`}>
-          {dropdownItems.map((item, index) => (
+      {dropdownItems && isOpen && (
+        <ul className="absolute z-30 top-full left-0 mt-2 bg-white text-gray-700 py-2 rounded-xl shadow-xl min-w-[180px]">
+          {dropdownItems.map((item, idx) => (
             <li
-              key={index}
+              key={idx}
               onClick={() => handleNavClick(item)}
-              className="px-4 py-2 hover:bg-teal-50 hover:text-teal-700 transition-colors duration-150 text-sm font-medium cursor-pointer"
+              className="px-4 py-2 hover:bg-teal-50 hover:text-teal-700 cursor-pointer text-sm font-medium"
             >
               {item}
             </li>
@@ -136,19 +120,14 @@ const NavItem = ({ title, icon: Icon, dropdownItems, currentUser }) => {
   );
 };
 
-
-// ----------------------------------------------------------------------------------
-// 2. Navbar Component
-// ----------------------------------------------------------------------------------
-
+// --- Navbar Component ---
 const Navbar = () => {
   const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState(null);
 
   useEffect(() => {
     const unsubscribe = onAuthChange((user) => {
-      if (user) setCurrentUser(user);
-      else setCurrentUser(null);
+      setCurrentUser(user || null);
     });
     return () => unsubscribe && unsubscribe();
   }, []);
@@ -157,77 +136,64 @@ const Navbar = () => {
     {
       title: "Assets",
       icon: Warehouse,
-      dropdownItems: ["IT Equipment", "Food Inventory", "Health and Hygiene"]
+      dropdownItems: ["IT Equipment", "Food Inventory", "Health and Hygiene"],
     },
     {
       title: "Settings",
       icon: Settings,
-      dropdownItems: [
-        "System Settings",
-        "User Management",
-        "Change Password"
-      ]
+      dropdownItems: ["System Settings", "User Management", "Change Password"],
     },
   ];
 
   const handleLogout = async () => {
     try {
       await logOut();
-      console.log("User logged out successfully");
       navigate("/login");
     } catch (error) {
-      console.error("Error logging out:", error);
+      console.error("Logout failed:", error);
     }
   };
 
-
   return (
     <header className="sticky top-0 z-50 shadow-lg bg-teal-600 text-white">
-      <div className="max-w-14xl mx-auto px-2 sm:px-6 lg:px-8 py-2 flex justify-between items-center">
-        {/* Logo and Navigation Links */}
-        <div className="flex items-center pl-4">
+      <div className="max-w-14xl mx-auto px-4 py-2 flex justify-between items-center">
+        <div className="flex items-center">
           <img
             src="https://beamish-paletas-139a19.netlify.app/logo.png"
-            alt="Navgurukul Logo"
-            className="h-10 md:h-12 w-auto object-contain mr-6"
-            onError={(e) => { e.target.onerror = null; e.target.src = "https://placehold.co/100x40/ffffff/0d9488?text=NG+Logo" }}
+            alt="Logo"
+            className="h-10 w-auto mr-6"
           />
-
           <nav className="hidden md:flex space-x-3">
-            {navStructure.map((item, index) => (
+            {navStructure.map((item, idx) => (
               <NavItem
-                key={index}
+                key={idx}
                 title={item.title}
                 icon={item.icon}
                 dropdownItems={item.dropdownItems}
                 currentUser={currentUser}
+                navigate={navigate} // ✅ important
               />
             ))}
           </nav>
         </div>
 
-        {/* User Info and Logout Button */}
-        <div className="flex items-center space-x-10">
+        <div className="flex items-center space-x-6">
           <span className="hidden lg:inline text-sm font-medium opacity-90">
             Hello, {currentUser ? currentUser.displayName || currentUser.email : "Guest"}
           </span>
-          <button 
+          <button
             onClick={handleLogout}
-            className="flex items-center bg-red-500 hover:bg-red-600 px-4 py-2 rounded-full text-sm font-semibold transition duration-300 shadow-md hover:shadow-lg transform active:scale-95 ring-2 ring-red-400/50"
+            className="flex items-center bg-red-500 hover:bg-red-600 px-4 py-2 rounded-full text-sm font-semibold"
           >
             <LogOut className="w-4 h-4 mr-1" />
             Logout
           </button>
         </div>
       </div>
-
-      {/* Mobile Navigation Placeholder */}
-      <nav className="md:hidden bg-teal-700 text-center py-2 text-sm text-teal-200">
-        <p className="opacity-70">Tap Logo for Menu</p>
-      </nav>
     </header>
   );
 };
+
 
 
 // --- Modal Component for Recommendations ---
@@ -806,3 +772,19 @@ export default function App() {
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
