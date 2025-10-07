@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { useNavigate } from 'react-router-dom'; // ✅ Ye bhi import karna zaruri hai
+
 
 // --- Initial Data ---
 const initialLaptops = [
@@ -117,8 +119,8 @@ function DeleteModal({ onclose, onconfirm }) {
 
 // --- Main Dashboard Component ---
 export default function ITDashboard() {
+  // Initialize state from localStorage or use initial data
   const [laptops, setLaptops] = useState(() => {
-    // Using localStorage for simple persistence
     try {
       const savedLaptops = localStorage.getItem('it_dashboard_laptops');
       return savedLaptops ? JSON.parse(savedLaptops) : initialLaptops;
@@ -137,6 +139,9 @@ export default function ITDashboard() {
   const [deleteModal, setDeleteModal] = useState({ isOpen: false, laptopId: null });
   const [hoveredSliceIndex, setHoveredSliceIndex] = useState(null); // State for Pie Chart hover
   const searchContainerRef = useRef(null);
+  
+  // NOTE: If using 'react-router-dom', you would uncomment this line:
+  // const navigate = useNavigate();
 
   // Save to localStorage whenever laptops change
   useEffect(() => {
@@ -172,7 +177,7 @@ export default function ITDashboard() {
     };
   }, [searchContainerRef]);
 
-  // Compute stats for cards and pie chart
+  // Compute stats for cards and pie chart using useMemo
   const stats = useMemo(() => {
     const total = laptops.length;
     const damaged = laptops.filter((l) => l.status === 'damaged').length;
@@ -182,9 +187,9 @@ export default function ITDashboard() {
   }, [laptops]);
 
   const pieData = useMemo(() => [
-    { label: 'In Stock', value: stats.inStock, color: STATUS_STYLES['in-stock'].color }, // Index 0
-    { label: 'Damaged', value: stats.damaged, color: STATUS_STYLES['damaged'].color },   // Index 1
-    { label: 'Out of Stock', value: stats.outOfStock, color: STATUS_STYLES['out-of-stock'].color }, // Index 2
+    { label: 'In Stock', value: stats.inStock, color: STATUS_STYLES['in-stock'].color },
+    { label: 'Damaged', value: stats.damaged, color: STATUS_STYLES['damaged'].color },
+    { label: 'Out of Stock', value: stats.outOfStock, color: STATUS_STYLES['out-of-stock'].color },
   ], [stats]);
 
   // Filter and search logic for the main table (Visible Laptops)
@@ -202,27 +207,33 @@ export default function ITDashboard() {
       });
   }, [laptops, filter, searchQuery]);
 
+  // Helper function for showing toast messages
   const showToast = (message, type = 'success') => {
     setToast({ show: true, message, type });
     setTimeout(() => setToast(s => ({ ...s, show: false })), 3000);
   };
 
+  // Resets the form state
   const resetForm = () => {
     setForm({ id: null, name: '', owner: '', serialNumber: '', disk: '', model: '', memory: '', processor: '', osName: '', status: 'in-stock' });
     setIsEditing(false);
   };
 
+  // Handles form input changes
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((s) => ({ ...s, [name]: value }));
   };
   
+  // Handles form submission (Add or Edit)
   const handleSubmit = (e) => {
     e.preventDefault();
     if (isEditing) {
+      // Edit logic
       setLaptops(list => list.map(it => (it.id === form.id ? { ...it, ...form } : it)));
       showToast('Laptop updated successfully!', 'success');
     } else {
+      // Add logic
       const newItem = { ...form, id: Date.now() };
       setLaptops(s => [newItem, ...s]);
       showToast('Laptop added successfully!', 'success');
@@ -230,39 +241,72 @@ export default function ITDashboard() {
     resetForm();
   };
   
+  // Sets the form for editing
   const handleEdit = (laptop) => {
     setForm({ ...laptop });
     setIsEditing(true);
+    // Scroll to the form area for better UX
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
   
+  // Opens the delete confirmation modal
   const openDeleteModal = (id) => {
     setDeleteModal({ isOpen: true, laptopId: id });
   };
 
+  // Closes the delete confirmation modal
   const closeDeleteModal = () => {
     setDeleteModal({ isOpen: false, laptopId: null });
   };
   
+  // Confirms and executes the delete action
   const confirmDelete = () => {
     setLaptops(list => list.filter(it => it.id !== deleteModal.laptopId));
     closeDeleteModal();
     showToast('Laptop deleted.', 'error');
   };
 
-  // Clicking suggestion filters the main table
+  // Clicking suggestion filters the main table by setting the search query
   const handleSuggestionClick = (laptop) => {
-    setSearchQuery(laptop.name); // Set the name to filter the table
+    setSearchQuery(laptop.name); 
     setSuggestions([]); // Close the suggestion box
   };
-
+  
+  // --- Updated Functionality: Smart Back/Reset View ---
+  const handleGoBack = () => {
+      const isFiltered = searchQuery.trim() !== '' || filter !== 'all';
+      
+      if (isFiltered) {
+          // 1. If search/filters are active, reset them (stay on the IT Dashboard)
+          setSearchQuery('');
+          setFilter('all');
+          setSuggestions([]); 
+          showToast('View reset to main inventory list.', 'success');
+      } else {
+          // 2. If already in the main view, navigate back in browser history 
+          // (like going back to a main menu or previous page)
+          
+          // If you were using 'react-router-dom', the navigation logic would look like this:
+          // navigate('/dashboard'); 
+          
+          // For now, we use the native browser history 'back' function:
+          if (window.history.length > 1) {
+              window.history.back();
+          } else {
+              showToast('Cannot go back further in history. Resetting view instead.', 'error');
+          }
+      }
+  };
+  
   return (
     <>
+      {/* Toast and Modal Components */}
       {toast.show && <Toast message={toast.message} type={toast.type} onclose={() => setToast(s => ({...s, show: false}))} />}
       {deleteModal.isOpen && <DeleteModal onclose={closeDeleteModal} onconfirm={confirmDelete} />}
 
       <div className="p-4 sm:p-6 font-sans bg-blue-50 min-h-screen">
         <header className="grid grid-cols-1 md:grid-cols-3 items-center gap-4 mb-6">
+          {/* Column 1: Logo and Title */}
           <div className="flex items-center gap-3 justify-self-start">
             <div className="p-3 rounded-xl bg-gradient-to-br from-blue-600 to-blue-400 text-white font-extrabold text-lg shadow-lg shadow-blue-200">IT</div>
             <div>
@@ -270,58 +314,81 @@ export default function ITDashboard() {
               <p className="text-xs text-gray-500">Laptop Inventory Management</p>
             </div>
           </div>
-          <div ref={searchContainerRef} className="w-full max-w-lg justify-self-center md:col-start-2 relative">
-            <div className="relative">
-              <input 
-                value={searchQuery} 
-                onChange={(e) => setSearchQuery(e.target.value)} 
-                placeholder="Search by name, owner, or serial number..." 
-                className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-4 focus:ring-blue-100 shadow-md transition-all" 
-              />
-               <div className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-600">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="11" cy="11" r="8"></circle>
-                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                </svg>
-              </div>
-              {suggestions.length > 0 && (
-                <ul className="absolute top-full mt-2 w-full bg-white border border-slate-200 rounded-xl shadow-2xl z-20 max-h-96 overflow-y-auto text-left">
-                  {suggestions.map(suggestion => (
-                    <li
-                      key={suggestion.id}
-                      className="p-4 hover:bg-blue-50 cursor-pointer border-b last:border-b-0 transition-colors"
-                      onClick={() => handleSuggestionClick(suggestion)}
-                    >
-                      <div className="flex justify-between items-start">
-                          <div>
-                              <div className="font-extrabold text-base text-gray-800">{suggestion.name}</div>
-                              <div className="text-sm text-gray-500">Owner: {suggestion.owner}</div>
-                          </div>
-                          <span className={`inline-block px-3 py-1 rounded-full font-bold text-xs ${STATUS_STYLES[suggestion.status].badge}`}>
-                            {STATUS_STYLES[suggestion.status].label}
-                          </span>
-                      </div>
-                      {/* Detailed specs in a 3-column grid */}
-                      <div className="mt-3 text-xs text-gray-600 grid grid-cols-3 gap-x-3 gap-y-1 border-t pt-2 border-slate-100">
-                          <p><strong className="font-medium text-gray-700">Model:</strong> {suggestion.model}</p>
-                          <p><strong className="font-medium text-gray-700">Serial:</strong> {suggestion.serialNumber}</p>
-                          <p><strong className="font-medium text-gray-700">OS:</strong> {suggestion.osName}</p>
-                          <p><strong className="font-medium text-gray-700">Disk:</strong> {suggestion.disk}</p>
-                          <p><strong className="font-medium text-gray-700">RAM:</strong> {suggestion.memory}</p>
-                          <p><strong className="font-medium text-gray-700">CPU:</strong> {suggestion.processor}</p>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
+          
+          {/* Column 2: Search Input with Suggestions */}
+          <div ref={searchContainerRef} className="w-full max-w-xl justify-self-center md:col-start-2 relative">
+            <input 
+              value={searchQuery} 
+              onChange={(e) => setSearchQuery(e.target.value)} 
+              placeholder="Search by name, owner, or serial number..."
+              className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-4 focus:ring-blue-100 shadow-md transition-all" 
+            />
+             <div className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-600">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
             </div>
+            {suggestions.length > 0 && (
+              <ul className="absolute top-full mt-2 w-full bg-white border border-slate-200 rounded-xl shadow-2xl z-20 max-h-96 overflow-y-auto text-left">
+                {suggestions.map(suggestion => (
+                  <li
+                    key={suggestion.id}
+                    className="p-4 hover:bg-blue-50 cursor-pointer border-b last:border-b-0 transition-colors"
+                    onClick={() => handleSuggestionClick(suggestion)}
+                  >
+                    <div className="flex justify-between items-start">
+                        <div>
+                            <div className="font-extrabold text-base text-gray-800">{suggestion.name}</div>
+                            <div className="text-sm text-gray-500">Owner: {suggestion.owner}</div>
+                        </div>
+                        <span className={`inline-block px-3 py-1 rounded-full font-bold text-xs ${STATUS_STYLES[suggestion.status].badge}`}>
+                          {STATUS_STYLES[suggestion.status].label}
+                        </span>
+                    </div>
+                    {/* Detailed specs in a 3-column grid */}
+                    <div className="mt-3 text-xs text-gray-600 grid grid-cols-3 gap-x-3 gap-y-1 border-t pt-2 border-slate-100">
+                        <p><strong className="font-medium text-gray-700">Model:</strong> {suggestion.model}</p>
+                        <p><strong className="font-medium text-gray-700">Serial:</strong> {suggestion.serialNumber}</p>
+                        <p><strong className="font-medium text-gray-700">OS:</strong> {suggestion.osName}</p>
+                        <p><strong className="font-medium text-gray-700">Disk:</strong> {suggestion.disk}</p>
+                        <p><strong className="font-medium text-gray-700">RAM:</strong> {suggestion.memory}</p>
+                        <p><strong className="font-medium text-gray-700">CPU:</strong> {suggestion.processor}</p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
+          
+          {/* End Search Container */}
+            
+          {/* Column 3: Back Button (Always colorful and responsive) */}
+          
+          <div className="justify-self-end w-full md:w-auto">
+            
+            <button 
+                onClick={handleGoBack} 
+                title="Filters aur Search ko Reset karein ya pichhle page par jaayen"
+                // --- Button styling remains the same ---
+                className="w-full md:w-auto px-4 py-3 rounded-xl font-bold transition-all duration-300 flex items-center justify-center gap-2 text-sm whitespace-nowrap 
+                           bg-gradient-to-br from-pink-500 to-orange-400 text-white shadow-lg shadow-orange-300 
+                           hover:from-pink-600 hover:to-orange-500 active:scale-[0.97]"
+            >
+              {/* SVG for Back Arrow */}
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+              Back
+            </button>
+          </div>
+
         </header>
 
+        {/* ADD/EDIT FORM SECTION */}
         <section className="bg-white p-6 rounded-xl shadow-lg mb-8 border border-slate-100">
             <h2 className="text-lg font-extrabold text-gray-800">{isEditing ? 'Edit Laptop Details' : 'Add New Laptop'}</h2>
             <p className="text-sm text-gray-500 mb-5">{isEditing ? 'Modify and update the record' : 'Fill the form to add a new laptop'}</p>
             <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
+              {/* Input Fields */}
               <input name="name" placeholder="Device Name (e.g., MacBook Pro)" value={form.name} onChange={handleChange} required className="p-3 rounded-lg border border-slate-300 focus:ring-blue-500 focus:border-blue-500 transition-shadow" />
               <input name="owner" placeholder="Owner Name (e.g., Jane Doe)" value={form.owner} onChange={handleChange} required className="p-3 rounded-lg border border-slate-300 focus:ring-blue-500 focus:border-blue-500 transition-shadow" />
               <input name="serialNumber" placeholder="Serial Number (e.g., SN123456)" value={form.serialNumber} onChange={handleChange} required className="lg:col-span-2 p-3 rounded-lg border border-slate-300 focus:ring-blue-500 focus:border-blue-500 transition-shadow" />
@@ -335,13 +402,15 @@ export default function ITDashboard() {
               </select>
               <div className='hidden lg:block' /> {/* Spacer on desktop */}
 
-              <input name="disk" placeholder="Disk (e.g. 512GB SSD)" value={form.disk} onChange={handleChange} className="p-3 rounded-lg border border-slate-300" />
-              <input name="memory" placeholder="Memory (e.g. 16GB RAM)" value={form.memory} onChange={handleChange} className="p-3 rounded-lg border border-slate-300" />
-              <input name="processor" placeholder="Processor (e.g. Intel i7)" value={form.processor} onChange={handleChange} className="p-3 rounded-lg border border-slate-300" />
+              <input name="disk" placeholder="Disk (e.g., 512GB SSD)" value={form.disk} onChange={handleChange} className="p-3 rounded-lg border border-slate-300" />
+              <input name="memory" placeholder="Memory (e.g., 16GB RAM)" value={form.memory} onChange={handleChange} className="p-3 rounded-lg border border-slate-300" />
+              <input name="processor" placeholder="Processor (e.g., Intel i7)" value={form.processor} onChange={handleChange} className="p-3 rounded-lg border border-slate-300" />
               
+              {/* Action Buttons */}
               <div className="flex gap-3 items-center col-span-full mt-2">
                 <button 
                   type="submit" 
+                  // Add Laptop Button (kept blue)
                   className="px-6 py-3 rounded-xl border-none cursor-pointer bg-gradient-to-br from-blue-600 to-blue-400 text-white font-bold hover:from-blue-700 hover:to-blue-500 transition-all shadow-lg shadow-blue-200 active:scale-[0.98]">
                   {isEditing ? 'Update Laptop' : 'Add Laptop'}
                 </button>
@@ -359,16 +428,27 @@ export default function ITDashboard() {
 
         {/* STATS CARDS */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-            {Object.entries(stats).map(([key, value]) => (
-                <div key={key} className="bg-white p-5 rounded-xl shadow-md border border-slate-100">
-                    <div className="text-sm font-semibold text-gray-500 capitalize">{key.replace(/([A-Z])/g, ' $1')}</div>
-                    <div className="text-3xl font-extrabold text-gray-800 mt-1">{value}</div>
-                </div>
-            ))}
+            <div className="bg-white p-5 rounded-xl shadow-md border border-slate-100">
+                <div className="text-sm font-semibold text-gray-500">Total Devices</div>
+                <div className="text-3xl font-extrabold text-gray-800 mt-1">{stats.total}</div>
+            </div>
+            <div className="bg-white p-5 rounded-xl shadow-md border border-slate-100">
+                <div className="text-sm font-semibold text-gray-500">In Stock</div>
+                <div className="text-3xl font-extrabold text-gray-800 mt-1">{stats.inStock}</div>
+            </div>
+            <div className="bg-white p-5 rounded-xl shadow-md border border-slate-100">
+                <div className="text-sm font-semibold text-gray-500">Damaged</div>
+                <div className="text-3xl font-extrabold text-gray-800 mt-1">{stats.damaged}</div>
+            </div>
+            <div className="bg-white p-5 rounded-xl shadow-md border border-slate-100">
+                <div className="text-sm font-semibold text-gray-500">Out of Stock</div>
+                <div className="text-3xl font-extrabold text-gray-800 mt-1">{stats.outOfStock}</div>
+            </div>
         </div>
 
         {/* INVENTORY TABLE & CHART */}
         <div className="bg-white p-6 rounded-xl shadow-lg border border-slate-100">
+            {/* Header and Filter */}
             <div className="flex flex-wrap items-center justify-between gap-4 mb-5 pb-3 border-b border-slate-100">
               <h3 className="text-xl font-extrabold text-gray-800">Laptop Inventory</h3>
               
@@ -382,18 +462,18 @@ export default function ITDashboard() {
                 </select>
               </div>
               
-              <div className="text-sm text-gray-500">{visibleLaptops.length} item(s) shown</div>
+              <div className="text-sm text-gray-500">{visibleLaptops.length} items shown</div>
             </div>
 
+            {/* Table */}
             <div className="overflow-x-auto mb-6">
               <table className="w-full border-collapse text-sm">
                 <thead>
                   <tr className="text-left bg-blue-50">
-                    {['Device / Owner', 'Serial', 'Disk', 'Model', 'Memory', 'OS', 'Status', 'Actions'].map(h => <th key={h} className="p-3 font-bold text-gray-700 border-b border-slate-200">{h}</th>)}
+                    {['Device / Owner', 'Serial', 'Disk', 'Model', 'Memory', 'OS', 'Status', 'Action'].map(h => <th key={h} className="p-3 font-bold text-gray-700 border-b border-slate-200">{h}</th>)}
                   </tr>
                 </thead>
-                <tbody>
-                  {visibleLaptops.map(lap => {
+                <tbody>{visibleLaptops.map(lap => {
                     const style = STATUS_STYLES[lap.status];
                     return (
                       <tr id={`laptop-row-${lap.id}`} key={lap.id} className={`${style.row} hover:bg-slate-100 transition-all duration-150 border-b border-slate-200`}>
@@ -424,15 +504,13 @@ export default function ITDashboard() {
                         </td>
                       </tr>
                     );
-                  })}
-                  {visibleLaptops.length === 0 && (
-                    <tr><td colSpan={8} className="p-6 text-center text-gray-500 bg-slate-50 border-b border-slate-200">No items match your current search and filter criteria.</td></tr>
-                  )}
-                </tbody>
+                  })}{visibleLaptops.length === 0 && (
+                    <tr><td colSpan={8} className="p-6 text-center text-gray-500 bg-slate-50 border-b border-slate-200">No items match your current search and filter criteria.</td></tr> 
+                  )}</tbody>
               </table>
             </div>
             
-            {/* PIE CHART and Legend (Updated with hover state) */}
+            {/* PIE CHART and Legend */}
             <div className="flex flex-wrap gap-8 items-center mt-4 pt-4 border-t border-slate-100">
               <div>
                 <PieChart 
@@ -449,7 +527,7 @@ export default function ITDashboard() {
                     key={p.label} 
                     className={`flex gap-4 items-center text-sm cursor-pointer transition-all duration-200 ${hoveredSliceIndex === index ? 'opacity-100 font-extrabold text-blue-600 scale-[1.03]' : 'opacity-80'}`}
                     onMouseEnter={() => setHoveredSliceIndex(index)}
-                    onMouseLeave={() => setHoveredSliceIndex(null)}
+                    onMouseLeave={() => setHoveredIndex(null)}
                   >
                     <div style={{ background: p.color }} className="w-3.5 h-3.5 rounded-full shadow-md" />
                     <div className="font-semibold text-gray-700 w-28">{p.label}</div>
@@ -463,3 +541,4 @@ export default function ITDashboard() {
     </>
   );
 }
+

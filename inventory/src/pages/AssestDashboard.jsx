@@ -93,6 +93,9 @@ const NavItem = ({ title, icon: Icon, dropdownItems, currentUser, navigate }) =>
     // future dropdowns add here
   };
 
+
+
+
   return (
     <div className="relative" ref={dropdownRef}>
       <div
