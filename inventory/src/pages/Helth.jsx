@@ -58,9 +58,10 @@ export default function MedicationDashboard() {
   };
 
   // Back button
-  const handleBack = () => {
-    navigate("/dashboard"); // dashboard page pe le jayega
-  };
+const handleBack = () => {
+  navigate("/campus/:campusName/assets"); // Asset Dashboard (Kishanganj) page pe le jayega
+};
+
 
   // Status counts
   const totalMedications = medications.length;
@@ -116,30 +117,26 @@ export default function MedicationDashboard() {
             </div>
         )}
 
-      {/* Back Button and Header */}
-      <div className="p-6">
-        <div className="flex items-center gap-4 mb-6">
-          <button
-            onClick={handleBack}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all"
-          >
-            {/* Left arrow icon */}
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-            </svg>
-            Back
-          </button>
 
-          <h1 className="text-2xl font-bold">Health & Hygiene</h1>
-        </div>
-      </div>
+
+
+      <button
+  onClick={handleBack}
+  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all"
+>
+  {/* Left arrow icon */}
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    className="h-5 w-5"
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+    strokeWidth={2}
+  >
+    <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+  </svg>
+  Back
+</button>
 
       <div className="max-w-7xl mx-auto">
         <header className="mb-8">
