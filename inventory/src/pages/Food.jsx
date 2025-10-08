@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { db, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot } from '../firebase';
 
 // Load Tone.js from CDN (Assuming this is available in the environment)
 const Tone = window.Tone; 
@@ -251,7 +252,8 @@ const DetailCard = ({ title, value, subValue, color }) => (
 
 export default function App() {
     // --- STATE MANAGEMENT (React Hooks) ---
-    const [rawInventory, setRawInventory] = useState(initialInventory);
+    const [rawInventory, setRawInventory] = useState([]);
+    const [loading, setLoading] = useState(true);
     const [currentFilter, setCurrentFilter] = useState('All Items');
     const [currentSearch, setCurrentSearch] = useState('');
     const [currentSort, setCurrentSort] = useState('expiry_asc');
@@ -268,6 +270,38 @@ export default function App() {
 
     // Tone.js reference and context status
     const synthRef = useRef(null);
+
+    // Load data from Firebase on component mount
+    useEffect(() => {
+        const unsubscribe = onSnapshot(collection(db, 'foodItems'), async (snapshot) => {
+            const foodData = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }));
+            
+            // If collection is empty, populate with initial data
+            if (foodData.length === 0 && snapshot.metadata.fromCache === false) {
+                console.log("Food items collection is empty, adding initial data...");
+                try {
+                    for (const foodItem of initialInventory) {
+                        const { id, ...foodItemData } = foodItem; // Remove id field
+                        await addDoc(collection(db, 'foodItems'), foodItemData);
+                    }
+                    console.log("Initial food items data added successfully!");
+                } catch (error) {
+                    console.error("Error adding initial food items:", error);
+                }
+            } else {
+                setRawInventory(foodData);
+                setLoading(false);
+            }
+        }, (error) => {
+            console.error("Error loading food items:", error);
+            setLoading(false);
+        });
+
+        return () => unsubscribe();
+    }, []);
 
     // --- TONE.JS AUDIO SETUP ---
     useEffect(() => {
@@ -428,7 +462,7 @@ export default function App() {
 
 
     // --- CRUD OPERATIONS ---
-    const handleAddItem = (e) => {
+    const handleAddItem = async (e) => {
         e.preventDefault();
         const form = e.target;
         const name = form.elements['item-name-input'].value.trim();
@@ -441,37 +475,51 @@ export default function App() {
             return;
         }
 
-        const newItem = {
-            id: Date.now(), 
-            name: name,
-            quantity: quantity,
-            expiryDate: expiryDate,
-            // 'notes' field removed from the object
-        };
+        try {
+            const newItem = {
+                name: name,
+                quantity: quantity,
+                expiryDate: expiryDate,
+                // 'notes' field removed from the object
+            };
 
-        setRawInventory(prev => [...prev, newItem]);
-        form.reset();
-        form.elements['item-quantity-input'].value = "1";
-        showMessage(name, 'success'); 
-    };
-
-    const handleEditSave = (updatedItem) => {
-        setRawInventory(prev => 
-            prev.map(item => item.id === updatedItem.id ? updatedItem : item)
-        );
-        setEditingItem(null);
-        showMessage(updatedItem.name, 'update'); 
-        if (currentPage === 'DETAILS' && selectedItem?.id === updatedItem.id) {
-            setSelectedItem(updatedItem);
+            await addDoc(collection(db, 'foodItems'), newItem);
+            form.reset();
+            form.elements['item-quantity-input'].value = "1";
+            showMessage(name, 'success'); 
+        } catch (error) {
+            console.error("Error adding food item:", error);
+            showMessage('Error adding item. Please try again.', 'error');
         }
     };
 
-    const handleDeleteItem = (itemId, itemName) => {
-        setRawInventory(prev => prev.filter(item => item.id !== itemId));
-        showMessage(itemName, 'delete'); 
-        if (currentPage === 'DETAILS' && selectedItem?.id === itemId) {
-            setCurrentPage('DASHBOARD');
-            setSelectedItem(null);
+    const handleEditSave = async (updatedItem) => {
+        try {
+            const itemRef = doc(db, 'foodItems', updatedItem.id);
+            const { id, ...updateData } = updatedItem;
+            await updateDoc(itemRef, updateData);
+            setEditingItem(null);
+            showMessage(updatedItem.name, 'update'); 
+            if (currentPage === 'DETAILS' && selectedItem?.id === updatedItem.id) {
+                setSelectedItem(updatedItem);
+            }
+        } catch (error) {
+            console.error("Error updating food item:", error);
+            showMessage('Error updating item. Please try again.', 'error');
+        }
+    };
+
+    const handleDeleteItem = async (itemId, itemName) => {
+        try {
+            await deleteDoc(doc(db, 'foodItems', itemId));
+            showMessage(itemName, 'delete'); 
+            if (currentPage === 'DETAILS' && selectedItem?.id === itemId) {
+                setCurrentPage('DASHBOARD');
+                setSelectedItem(null);
+            }
+        } catch (error) {
+            console.error("Error deleting food item:", error);
+            showMessage('Error deleting item. Please try again.', 'error');
         }
     };
     
@@ -677,6 +725,10 @@ export default function App() {
             </>
         );
     };
+
+    if (loading) {
+        return <div className="flex justify-center items-center min-h-screen">Loading...</div>;
+    }
 
     // --- REACT COMPONENT RENDER (Main Return) ---
     return (

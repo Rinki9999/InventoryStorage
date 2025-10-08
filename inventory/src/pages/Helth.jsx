@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { db, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot } from '../firebase';
 
 // Initial medication data
 const initialMedications = [
@@ -44,10 +45,43 @@ const DeleteIcon = () => (
 
 export default function MedicationDashboard() {
   const navigate = useNavigate();
-  const [medications, setMedications] = useState(initialMedications);
+  const [medications, setMedications] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [newMed, setNewMed] = useState({ name: "", qty: "", expiry: "" });
   const [editingMed, setEditingMed] = useState(null);
   const [notification, setNotification] = useState('');
+
+  // Load data from Firebase on component mount
+  useEffect(() => {
+    const unsubscribe = onSnapshot(collection(db, 'medications'), async (snapshot) => {
+      const medicationsData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      
+      // If collection is empty, populate with initial data
+      if (medicationsData.length === 0 && snapshot.metadata.fromCache === false) {
+        console.log("Medications collection is empty, adding initial data...");
+        try {
+          for (const medication of initialMedications) {
+            const { id, ...medicationData } = medication; // Remove id field
+            await addDoc(collection(db, 'medications'), medicationData);
+          }
+          console.log("Initial medications data added successfully!");
+        } catch (error) {
+          console.error("Error adding initial medications:", error);
+        }
+      } else {
+        setMedications(medicationsData);
+        setLoading(false);
+      }
+    }, (error) => {
+      console.error("Error loading medications:", error);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   // Function to show a notification and hide it after 3 seconds
   const showNotification = (message) => {
@@ -70,33 +104,49 @@ const handleBack = () => {
   const outOfStock = medications.filter(m => calculateStatus(m.qty) === "Out of Stock").length;
 
   // Add Medication
-  const handleAdd = () => {
+  const handleAdd = async () => {
     if (!newMed.name || !newMed.qty || !newMed.expiry) {
       showNotification("Please fill all fields.");
       return;
     }
-    const newEntry = {
-      id: Date.now(),
-      ...newMed,
-      qty: parseInt(newMed.qty),
-    };
-    setMedications([...medications, newEntry]);
-    setNewMed({ name: "", qty: "", expiry: "" });
-    showNotification("Medication added successfully!");
+    try {
+      const newMedicationData = {
+        ...newMed,
+        qty: parseInt(newMed.qty),
+      };
+      await addDoc(collection(db, 'medications'), newMedicationData);
+      setNewMed({ name: "", qty: "", expiry: "" });
+      showNotification("Medication added successfully!");
+    } catch (error) {
+      console.error("Error adding medication:", error);
+      showNotification("Error adding medication. Please try again.");
+    }
   };
 
   // Delete Medication
-  const handleDelete = (id) => {
-    setMedications(medications.filter(med => med.id !== id));
-    showNotification("Medication removed.");
+  const handleDelete = async (id) => {
+    try {
+      await deleteDoc(doc(db, 'medications', id));
+      showNotification("Medication removed.");
+    } catch (error) {
+      console.error("Error deleting medication:", error);
+      showNotification("Error deleting medication. Please try again.");
+    }
   };
 
   // Edit Medication
   const handleEdit = (med) => setEditingMed({ ...med });
-  const saveEdit = () => {
-    setMedications(medications.map(m => m.id === editingMed.id ? { ...editingMed, qty: parseInt(editingMed.qty) } : m));
-    setEditingMed(null);
-    showNotification("Changes saved!");
+  const saveEdit = async () => {
+    try {
+      const medicationRef = doc(db, 'medications', editingMed.id);
+      const { id, ...updateData } = { ...editingMed, qty: parseInt(editingMed.qty) };
+      await updateDoc(medicationRef, updateData);
+      setEditingMed(null);
+      showNotification("Changes saved!");
+    } catch (error) {
+      console.error("Error updating medication:", error);
+      showNotification("Error updating medication. Please try again.");
+    }
   };
 
   // Status color
@@ -108,6 +158,10 @@ const handleBack = () => {
       default: return "bg-gray-100 text-gray-800";
     }
   };
+
+  if (loading) {
+    return <div className="flex justify-center items-center min-h-screen">Loading...</div>;
+  }
 
   return (
     <div className="min-h-screen bg-gray-100 p-4 sm:p-6 lg:p-8 font-sans">

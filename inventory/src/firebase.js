@@ -12,7 +12,7 @@ import {
   signInWithEmailAndPassword,
 } from "firebase/auth";
 
-import { getFirestore, collection, addDoc, getDocs } from "firebase/firestore";
+import { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc, onSnapshot } from "firebase/firestore";
 import { getAnalytics } from "firebase/analytics";
 
 // Your Firebase config
@@ -42,4 +42,4 @@ export { auth };
 
 // Firestore
 const db = getFirestore(app);
-export { db, collection, addDoc, getDocs };
+export { db, collection, addDoc, getDocs, updateDoc, deleteDoc, doc, onSnapshot };

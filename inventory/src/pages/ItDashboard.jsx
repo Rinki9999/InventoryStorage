@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom'; // ✅ Ye bhi import karna zaruri hai
+import { db, collection, addDoc, getDocs, updateDoc, deleteDoc, doc, onSnapshot } from '../firebase';
 
 
 // --- Initial Data ---
@@ -119,16 +120,9 @@ function DeleteModal({ onclose, onconfirm }) {
 
 // --- Main Dashboard Component ---
 export default function ITDashboard() {
-  // Initialize state from localStorage or use initial data
-  const [laptops, setLaptops] = useState(() => {
-    try {
-      const savedLaptops = localStorage.getItem('it_dashboard_laptops');
-      return savedLaptops ? JSON.parse(savedLaptops) : initialLaptops;
-    } catch (error) {
-      console.error("Failed to parse laptops from localStorage", error);
-      return initialLaptops;
-    }
-  });
+  // Initialize state - will be loaded from Firebase
+  const [laptops, setLaptops] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const [filter, setFilter] = useState('all');
   const [form, setForm] = useState({ id: null, name: '', owner: '', serialNumber: '', disk: '', model: '', memory: '', processor: '', osName: '', status: 'in-stock' });
@@ -143,10 +137,37 @@ export default function ITDashboard() {
   // NOTE: If using 'react-router-dom', you would uncomment this line:
   // const navigate = useNavigate();
 
-  // Save to localStorage whenever laptops change
+  // Load data from Firebase on component mount
   useEffect(() => {
-    localStorage.setItem('it_dashboard_laptops', JSON.stringify(laptops));
-  }, [laptops]);
+    const unsubscribe = onSnapshot(collection(db, 'laptops'), async (snapshot) => {
+      const laptopsData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      
+      // If collection is empty, populate with initial data
+      if (laptopsData.length === 0 && snapshot.metadata.fromCache === false) {
+        console.log("Laptops collection is empty, adding initial data...");
+        try {
+          for (const laptop of initialLaptops) {
+            const { id, ...laptopData } = laptop; // Remove id field
+            await addDoc(collection(db, 'laptops'), laptopData);
+          }
+          console.log("Initial laptops data added successfully!");
+        } catch (error) {
+          console.error("Error adding initial laptops:", error);
+        }
+      } else {
+        setLaptops(laptopsData);
+        setLoading(false);
+      }
+    }, (error) => {
+      console.error("Error loading laptops:", error);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   // Effect to show suggestions based on search query (for the dropdown)
   useEffect(() => {
@@ -226,19 +247,26 @@ export default function ITDashboard() {
   };
   
   // Handles form submission (Add or Edit)
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (isEditing) {
-      // Edit logic
-      setLaptops(list => list.map(it => (it.id === form.id ? { ...it, ...form } : it)));
-      showToast('Laptop updated successfully!', 'success');
-    } else {
-      // Add logic
-      const newItem = { ...form, id: Date.now() };
-      setLaptops(s => [newItem, ...s]);
-      showToast('Laptop added successfully!', 'success');
+    try {
+      if (isEditing) {
+        // Edit logic - update in Firebase
+        const laptopRef = doc(db, 'laptops', form.id);
+        const { id, ...updateData } = form; // Remove id from update data
+        await updateDoc(laptopRef, updateData);
+        showToast('Laptop updated successfully!', 'success');
+      } else {
+        // Add logic - add to Firebase
+        const { id, ...newLaptopData } = form; // Remove id from new data
+        await addDoc(collection(db, 'laptops'), newLaptopData);
+        showToast('Laptop added successfully!', 'success');
+      }
+      resetForm();
+    } catch (error) {
+      console.error("Error saving laptop:", error);
+      showToast('Error saving laptop. Please try again.', 'error');
     }
-    resetForm();
   };
   
   // Sets the form for editing
@@ -260,10 +288,16 @@ export default function ITDashboard() {
   };
   
   // Confirms and executes the delete action
-  const confirmDelete = () => {
-    setLaptops(list => list.filter(it => it.id !== deleteModal.laptopId));
-    closeDeleteModal();
-    showToast('Laptop deleted.', 'error');
+  const confirmDelete = async () => {
+    try {
+      const laptopRef = doc(db, 'laptops', deleteModal.laptopId);
+      await deleteDoc(laptopRef);
+      closeDeleteModal();
+      showToast('Laptop deleted.', 'error');
+    } catch (error) {
+      console.error("Error deleting laptop:", error);
+      showToast('Error deleting laptop. Please try again.', 'error');
+    }
   };
 
   // Clicking suggestion filters the main table by setting the search query
@@ -298,6 +332,10 @@ export default function ITDashboard() {
       }
   };
   
+  if (loading) {
+    return <div className="flex justify-center items-center min-h-screen">Loading...</div>;
+  }
+
   return (
     <>
       {/* Toast and Modal Components */}
