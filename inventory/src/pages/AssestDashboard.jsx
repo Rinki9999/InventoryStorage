@@ -257,9 +257,6 @@ const RecommendationModal = ({ isOpen, onClose, recommendation, isLoading }) => 
 };
 
 
-// ----------------------------------------------------------------------------------
-// 3. Sidebar Component 
-// ----------------------------------------------------------------------------------
 
 const Sidebar = ({ filters, onFilterChange, onClearFilters }) => {
 
@@ -388,9 +385,6 @@ const AssetsTable = ({ assets = [] }) => {
   );
 };
 
-// ----------------------------------------------------------------------------------
-// 4. CategoryDistributionChart (Added Animation)
-// ----------------------------------------------------------------------------------
 
 const CategoryDistributionChart = ({ assets }) => {
   // Simple logic to calculate category quantities for visualization
@@ -560,9 +554,7 @@ const UrgentAlertsList = ({ assets, generateRecommendation, isGenerating }) => {
 };
 
 
-// ----------------------------------------------------------------------------------
-// 5. Main App Component (Updated for Filtering and Navigation Header)
-// ----------------------------------------------------------------------------------
+
 
 export default function App() {
   const [assets] = useState(initialAssets); // Assets remain constant

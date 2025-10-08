@@ -1,4 +1,6 @@
-// src/firebase.js
+
+
+
 import { initializeApp } from "firebase/app";
 import {
   getAuth,
@@ -9,6 +11,8 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
 } from "firebase/auth";
+
+import { getFirestore, collection, addDoc, getDocs } from "firebase/firestore";
 import { getAnalytics } from "firebase/analytics";
 
 // Your Firebase config
@@ -26,25 +30,16 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
 
-// Initialize Authentication
+// Authentication
 const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
-
-// Sign in with Google
 export const signInWithGoogle = () => signInWithPopup(auth, provider);
-
-// Sign up with email/password
-export const signUpWithEmail = (email, password) =>
-  createUserWithEmailAndPassword(auth, email, password);
-
-// Sign in with email/password
-export const signInWithEmail = (email, password) =>
-  signInWithEmailAndPassword(auth, email, password);
-
-// Listen to auth state changes
+export const signUpWithEmail = (email, password) => createUserWithEmailAndPassword(auth, email, password);
+export const signInWithEmail = (email, password) => signInWithEmailAndPassword(auth, email, password);
 export const onAuthChange = (callback) => onAuthStateChanged(auth, callback);
-
-// Logout
 export const logOut = () => signOut(auth);
-
 export { auth };
+
+// Firestore
+const db = getFirestore(app);
+export { db, collection, addDoc, getDocs };

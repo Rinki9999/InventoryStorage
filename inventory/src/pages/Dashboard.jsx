@@ -20,6 +20,7 @@ const campuses = [
 ];
 
 const CampusCard = ({ name, region, imageUrl , index}) => (
+  
 <div
   data-aos="zoom-in"
   data-aos-delay={index * 100}
