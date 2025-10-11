@@ -130,7 +130,7 @@ const NavItem = ({ title, icon: Icon, dropdownItems, currentUser, navigate }) =>
 };
 
 // --- Navbar Component ---
-const Navbar = () => {
+const Navbar = ({ userRole }) => {
   const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState(null);
 
@@ -141,18 +141,26 @@ const Navbar = () => {
     return () => unsubscribe && unsubscribe();
   }, []);
 
-  const navStructure = [
+  // Define all navigation options
+  const allNavOptions = [
     {
       title: "Assets",
       icon: Warehouse,
       dropdownItems: ["IT Equipment", "Food Inventory", "Health and Hygiene"],
+      allowedRoles: ["admin", "council"] // Only Admin and Council can access Assets
     },
     {
       title: "Settings",
       icon: Settings,
       dropdownItems: ["System Settings", "User Management", "Change Password"],
+      allowedRoles: ["admin", "council", "student"] // All roles can access Settings
     },
   ];
+
+  // Filter navigation based on user role
+  const navStructure = allNavOptions.filter(navItem => 
+    navItem.allowedRoles.includes(userRole)
+  );
 
   const handleLogout = async () => {
     try {
@@ -661,6 +669,8 @@ export default function App() {
   const [assets, setAssets] = useState([]); // Will be loaded from Firebase
   const [loading, setLoading] = useState(true);
   const [activeView, setActiveView] = useState({ view: 'dashboard', context: null });
+  const [currentUser, setCurrentUser] = useState(null);
+  const [userRole, setUserRole] = useState(null);
 
   // State for Sidebar Filters
   const [filters, setFilters] = useState({
@@ -672,6 +682,38 @@ export default function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [recommendation, setRecommendation] = useState({ assetName: '', text: '', status: '' });
   const [isGenerating, setIsGenerating] = useState(false);
+
+  // Get current user and their role
+  useEffect(() => {
+    const unsubscribe = onAuthChange(async (user) => {
+      if (user) {
+        setCurrentUser(user);
+        // Get user role from custom claims or database
+        try {
+          // Try to get role from custom claims first
+          const idTokenResult = await user.getIdTokenResult();
+          const role = idTokenResult.claims.role;
+          
+          if (role) {
+            setUserRole(role);
+          } else {
+            // If no custom claims, check localStorage for signup role
+            const signupRole = localStorage.getItem(`userRole_${user.uid}`);
+            setUserRole(signupRole || 'student'); // Default to student
+          }
+        } catch (error) {
+          console.error("Error getting user role:", error);
+          // Fallback to localStorage
+          const signupRole = localStorage.getItem(`userRole_${user.uid}`);
+          setUserRole(signupRole || 'student');
+        }
+      } else {
+        setCurrentUser(null);
+        setUserRole(null);
+      }
+    });
+    return () => unsubscribe && unsubscribe();
+  }, []);
 
   // Load data from Firebase - combine all collections
   useEffect(() => {
@@ -921,7 +963,7 @@ export default function App() {
   return (
     <div className="bg-gray-100 h-screen font-sans text-gray-900 overflow-hidden">
 
-      <Navbar />
+      <Navbar userRole={userRole} />
 
       <div className="flex flex-col md:flex-row h-full">
         {/* Pass filter state and handlers to Sidebar */}
