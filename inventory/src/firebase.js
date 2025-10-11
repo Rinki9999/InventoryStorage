@@ -12,7 +12,7 @@ import {
   signInWithEmailAndPassword,
 } from "firebase/auth";
 
-import { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc, onSnapshot } from "firebase/firestore";
+import { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc, onSnapshot, query, where, orderBy } from "firebase/firestore";
 import { getAnalytics } from "firebase/analytics";
 
 // Your Firebase config
@@ -42,4 +42,75 @@ export { auth };
 
 // Firestore
 const db = getFirestore(app);
-export { db, collection, addDoc, getDocs, updateDoc, deleteDoc, doc, onSnapshot };
+
+// Function to send notifications
+const sendNotification = async (type, data, recipients) => {
+  try {
+    // Add notification to Firestore
+    const notificationData = {
+      title: getNotificationTitle(type, data),
+      message: getNotificationMessage(type, data),
+      type: type,
+      read: false,
+      createdAt: serverTimestamp(),
+      recipientRoles: recipients,
+      category: data.category || 'General'
+    };
+
+    await addDoc(collection(db, 'notifications'), notificationData);
+
+  } catch (error) {
+    console.error("Error sending notification:", error);
+  }
+};
+
+// Helper function to get notification title
+const getNotificationTitle = (type, data) => {
+  switch (type) {
+    case 'low_stock':
+      return `Low Stock Alert: ${data.name}`;
+    case 'expiring_soon':
+      return `Expiring Soon: ${data.name}`;
+    case 'expired':
+      return `Item Expired: ${data.name}`;
+    case 'damaged':
+      return `Item Damaged: ${data.name}`;
+    case 'update':
+      return `Item Updated: ${data.name}`;
+    default:
+      return 'Inventory Notification';
+  }
+};
+
+// Helper function to get notification message
+const getNotificationMessage = (type, data) => {
+  switch (type) {
+    case 'low_stock':
+      return `${data.name} is running low on stock (Quantity: ${data.qty})`;
+    case 'expiring_soon':
+      return `${data.name} will expire on ${data.expiry}`;
+    case 'expired':
+      return `${data.name} has expired on ${data.expiry}`;
+    case 'damaged':
+      return `${data.name} has been marked as damaged`;
+    case 'update':
+      return `${data.name} has been updated in the inventory`;
+    default:
+      return 'Please check the inventory system for details';
+  }
+};
+
+export { 
+  db, 
+  collection, 
+  addDoc, 
+  getDocs, 
+  updateDoc, 
+  deleteDoc, 
+  doc, 
+  onSnapshot, 
+  query, 
+  where, 
+  orderBy,
+  sendNotification 
+};
