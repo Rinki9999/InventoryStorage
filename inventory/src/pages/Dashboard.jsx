@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from "react-router-dom"; 
 import { logOut, onAuthChange } from "../firebase"; 
-import { Warehouse, Settings, LogOut, ChevronDown, User } from 'lucide-react';
+import { Warehouse, Settings, LogOut, ChevronDown, User, Camera } from 'lucide-react';
 import AOS from "aos";
 import "aos/dist/aos.css";
 
@@ -18,6 +18,246 @@ const campuses = [
   { name: "Sarjapur", region: "Karnataka", imageUrl: "https://content.jdmagicbox.com/v2/comp/bangalore/w8/080pxx80.xx80.181203163638.t3w8/catalogue/navgurukul-bangalore-campus-huskur-bangalore-computer-training-insitutes-for-software-diploma-tqjmmkp00i.jpg" },
   { name: "Udaipur", region: "Rajasthan", imageUrl: "https://lh3.googleusercontent.com/gps-cs-s/AC9h4npRn5v_3dPUDWq_OIfu2i98fQhXYfxAWvcLWAc6_PwcApawKb_2uXZ-NHN70yuMlp4C7Z7egnKSNLICfd0nA00e3Bjw3GEnezakiDFAX7sE4Jz6iJPZR_M-yAkv5Wqiog66-LgU=s680-w680-h510-rw" },
 ];
+
+// Profile Picture Component with Settings Dropdown and Modal
+const ProfilePicture = ({ currentUser, onLogout }) => {
+  const [profileImage, setProfileImage] = useState(null);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [previewImage, setPreviewImage] = useState(null);
+  const [originalImage, setOriginalImage] = useState(null);
+  const fileInputRef = React.useRef(null);
+  const cameraInputRef = React.useRef(null);
+  const dropdownRef = React.useRef(null);
+
+  // Load saved profile image from localStorage
+  useEffect(() => {
+    const savedImage = localStorage.getItem(`profile-image-${currentUser?.uid || 'guest'}`);
+    if (savedImage) {
+      setProfileImage(savedImage);
+      setOriginalImage(savedImage);
+    }
+  }, [currentUser]);
+
+  // No need for click outside detection with hover
+
+  const handleImageSelect = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setPreviewImage(e.target.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const openChangeProfileModal = () => {
+    setShowModal(true);
+    setShowDropdown(false);
+    setPreviewImage(profileImage);
+  };
+
+  const handleSaveImage = () => {
+    if (previewImage) {
+      setProfileImage(previewImage);
+      localStorage.setItem(`profile-image-${currentUser?.uid || 'guest'}`, previewImage);
+    }
+    setShowModal(false);
+    setPreviewImage(null);
+  };
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setPreviewImage(null);
+    // Reset file inputs
+    if (fileInputRef.current) fileInputRef.current.value = '';
+    if (cameraInputRef.current) cameraInputRef.current.value = '';
+  };
+
+  const triggerGalleryUpload = () => {
+    fileInputRef.current?.click();
+  };
+
+  const triggerCameraUpload = () => {
+    cameraInputRef.current?.click();
+  };
+
+  const handleMouseEnter = () => {
+    setShowDropdown(true);
+  };
+
+  const handleMouseLeave = () => {
+    setShowDropdown(false);
+  };
+
+  return (
+    <>
+      <div 
+        className="relative" 
+        ref={dropdownRef}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+      >
+        <div 
+          className="w-10 h-10 rounded-full overflow-hidden cursor-pointer border-2 border-white/20 hover:border-white/40 transition-all duration-200"
+        >
+          {profileImage ? (
+            <img 
+              src={profileImage} 
+              alt="Profile" 
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="w-full h-full bg-teal-700 flex items-center justify-center">
+              <User className="w-6 h-6 text-white" />
+            </div>
+          )}
+        </div>
+        
+        {/* Profile Dropdown Menu */}
+        {showDropdown && (
+          <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50">
+            {/* User Info */}
+            <div className="px-4 py-3 border-b border-gray-100">
+              <p className="text-sm font-semibold text-gray-900">
+                {currentUser ? currentUser.displayName || "User" : "Guest"}
+              </p>
+              <p className="text-xs text-gray-500">
+                {currentUser ? currentUser.email : "guest@example.com"}
+              </p>
+            </div>
+            
+            {/* Profile & Settings Options */}
+            <div className="py-1">
+              <button
+                onClick={() => setShowDropdown(false)}
+                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center"
+              >
+                <User className="w-4 h-4 mr-3" />
+                View Profile
+              </button>
+              
+              <button
+                onClick={() => setShowDropdown(false)}
+                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center"
+              >
+                <Settings className="w-4 h-4 mr-3" />
+                Change Password
+              </button>
+              
+              <div className="border-t border-gray-100 my-1"></div>
+              
+              <button
+                onClick={openChangeProfileModal}
+                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center"
+              >
+                <Camera className="w-4 h-4 mr-3" />
+                Change Profile Picture
+              </button>
+              
+              <button
+                onClick={() => {
+                  setShowDropdown(false);
+                  if (onLogout) onLogout();
+                }}
+                className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center"
+              >
+                <LogOut className="w-4 h-4 mr-3" />
+                Logout
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Profile Picture Change Modal */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-2xl max-w-md w-full mx-4">
+            {/* Modal Header */}
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900">Change Profile Picture</h3>
+            </div>
+
+            {/* Modal Body */}
+            <div className="px-6 py-6">
+              {/* Preview Image */}
+              <div className="flex justify-center mb-6">
+                <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-gray-200">
+                  {previewImage ? (
+                    <img 
+                      src={previewImage} 
+                      alt="Preview" 
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                      <User className="w-16 h-16 text-gray-400" />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Upload Options */}
+              <div className="space-y-3">
+                <button
+                  onClick={triggerCameraUpload}
+                  className="w-full flex items-center justify-center px-4 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors duration-200"
+                >
+                  <Camera className="w-5 h-5 mr-2" />
+                  Take Photo from Camera
+                </button>
+                
+                <button
+                  onClick={triggerGalleryUpload}
+                  className="w-full flex items-center justify-center px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+                >
+                  <User className="w-5 h-5 mr-2" />
+                  Choose from Gallery
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="px-6 py-4 border-t border-gray-200 flex space-x-3">
+              <button
+                onClick={handleCloseModal}
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors duration-200"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveImage}
+                disabled={!previewImage}
+                className="flex-1 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors duration-200"
+              >
+                Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Hidden file inputs */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleImageSelect}
+        className="hidden"
+      />
+      <input
+        ref={cameraInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        onChange={handleImageSelect}
+        className="hidden"
+      />
+    </>
+  );
+};
 
 const CampusCard = ({ name, region, imageUrl , index}) => (
   
@@ -144,6 +384,7 @@ export default function Dashboard() {
         "Change Password"
       ]
     },
+
   ];
 
   return (
@@ -177,28 +418,23 @@ export default function Dashboard() {
             </nav>
           </div>
 
-          {/* User and Logout */}
-          <div className="flex items-center space-x-10">
-<span className="hidden lg:inline text-sm font-medium opacity-90">
-  Hello, {currentUser ? currentUser.displayName || currentUser.email : "Guest"}
-</span>
-           <button 
-  onClick={async () => {
-    try {
-      await logOut(); // Firebase logout
-      console.log("User logged out successfully");
-      navigate("/login"); // ✅ React Router redirect
-    } catch (error) {
-      console.error("Error logging out:", error);
-    }
-  }}
-
-
-  className="flex items-center bg-red-500 hover:bg-red-600 px-4 py-2 rounded-full text-sm font-semibold transition duration-300 shadow-md hover:shadow-lg transform active:scale-95 ring-2 ring-red-400/50"
->
-  <LogOut className="w-4 h-4 mr-1" />
-  Logout
-</button>
+          {/* User Profile */}
+          <div className="flex items-center space-x-4">
+            <span className="hidden lg:inline text-sm font-medium opacity-90">
+              Hello, {currentUser ? currentUser.displayName || currentUser.email : "Guest"}
+            </span>
+            <ProfilePicture 
+              currentUser={currentUser} 
+              onLogout={async () => {
+                try {
+                  await logOut(); // Firebase logout
+                  console.log("User logged out successfully");
+                  navigate("/login"); // ✅ React Router redirect
+                } catch (error) {
+                  console.error("Error logging out:", error);
+                }
+              }}
+            />
 
 
           </div>
