@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Warehouse, Settings, LogOut, ChevronDown } from 'lucide-react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useParams } from 'react-router-dom';
 import { logOut, onAuthChange, db, collection, onSnapshot } from '../firebase'; // replace path with actual firebase config file
 
 
@@ -657,6 +657,7 @@ const UrgentAlertsList = ({ assets, generateRecommendation, isGenerating }) => {
 
 
 export default function App() {
+  const { campusName } = useParams(); // Get campus name from URL
   const [assets, setAssets] = useState([]); // Will be loaded from Firebase
   const [loading, setLoading] = useState(true);
   const [activeView, setActiveView] = useState({ view: 'dashboard', context: null });
@@ -949,7 +950,7 @@ export default function App() {
                 </button>
               )}
               <h1 className="text-3xl font-extrabold text-gray-900 flex-grow">
-                Kishanganj Dashboard
+                {campusName ? decodeURIComponent(campusName) : "Campus"} Dashboard
               </h1>
             </div>
 

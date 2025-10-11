@@ -24,10 +24,10 @@ const ProfilePicture = ({ currentUser, onLogout }) => {
   const [profileImage, setProfileImage] = useState(null);
   const [showDropdown, setShowDropdown] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [showProfileView, setShowProfileView] = useState(false);
   const [previewImage, setPreviewImage] = useState(null);
   const [originalImage, setOriginalImage] = useState(null);
   const fileInputRef = React.useRef(null);
-  const cameraInputRef = React.useRef(null);
   const dropdownRef = React.useRef(null);
 
   // Load saved profile image from localStorage
@@ -58,6 +58,11 @@ const ProfilePicture = ({ currentUser, onLogout }) => {
     setPreviewImage(profileImage);
   };
 
+  const openProfileView = () => {
+    setShowProfileView(true);
+    setShowDropdown(false);
+  };
+
   const handleSaveImage = () => {
     if (previewImage) {
       setProfileImage(previewImage);
@@ -72,15 +77,10 @@ const ProfilePicture = ({ currentUser, onLogout }) => {
     setPreviewImage(null);
     // Reset file inputs
     if (fileInputRef.current) fileInputRef.current.value = '';
-    if (cameraInputRef.current) cameraInputRef.current.value = '';
   };
 
   const triggerGalleryUpload = () => {
     fileInputRef.current?.click();
-  };
-
-  const triggerCameraUpload = () => {
-    cameraInputRef.current?.click();
   };
 
   const handleMouseEnter = () => {
@@ -131,7 +131,7 @@ const ProfilePicture = ({ currentUser, onLogout }) => {
             {/* Profile & Settings Options */}
             <div className="py-1">
               <button
-                onClick={() => setShowDropdown(false)}
+                onClick={openProfileView}
                 className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center"
               >
                 <User className="w-4 h-4 mr-3" />
@@ -202,14 +202,6 @@ const ProfilePicture = ({ currentUser, onLogout }) => {
               {/* Upload Options */}
               <div className="space-y-3">
                 <button
-                  onClick={triggerCameraUpload}
-                  className="w-full flex items-center justify-center px-4 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors duration-200"
-                >
-                  <Camera className="w-5 h-5 mr-2" />
-                  Take Photo from Camera
-                </button>
-                
-                <button
                   onClick={triggerGalleryUpload}
                   className="w-full flex items-center justify-center px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
                 >
@@ -239,19 +231,116 @@ const ProfilePicture = ({ currentUser, onLogout }) => {
         </div>
       )}
 
+      {/* Profile View Modal */}
+      {showProfileView && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-2xl max-w-md w-full mx-4">
+            {/* Modal Header */}
+            <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+              <h3 className="text-lg font-semibold text-gray-900">Profile Information</h3>
+              <button
+                onClick={() => setShowProfileView(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <User className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="px-6 py-6">
+              {/* Profile Picture Display */}
+              <div className="flex justify-center mb-6">
+                <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-gray-200">
+                  {profileImage ? (
+                    <img 
+                      src={profileImage} 
+                      alt="Profile" 
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                      <User className="w-12 h-12 text-gray-400" />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* User Information */}
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                  <div className="p-3 bg-gray-50 rounded-lg text-sm text-gray-900">
+                    {currentUser?.displayName || "Not provided"}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+                  <div className="p-3 bg-gray-50 rounded-lg text-sm text-gray-900">
+                    {currentUser?.email || "Not provided"}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">User ID</label>
+                  <div className="p-3 bg-gray-50 rounded-lg text-sm text-gray-900">
+                    {currentUser?.uid || "Guest"}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Account Created</label>
+                  <div className="p-3 bg-gray-50 rounded-lg text-sm text-gray-900">
+                    {currentUser?.metadata?.creationTime 
+                      ? new Date(currentUser.metadata.creationTime).toLocaleDateString()
+                      : "Not available"
+                    }
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Last Sign In</label>
+                  <div className="p-3 bg-gray-50 rounded-lg text-sm text-gray-900">
+                    {currentUser?.metadata?.lastSignInTime 
+                      ? new Date(currentUser.metadata.lastSignInTime).toLocaleDateString()
+                      : "Not available"
+                    }
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Email Verified</label>
+                  <div className="p-3 bg-gray-50 rounded-lg text-sm">
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      currentUser?.emailVerified 
+                        ? 'bg-green-100 text-green-800' 
+                        : 'bg-yellow-100 text-yellow-800'
+                    }`}>
+                      {currentUser?.emailVerified ? 'Verified' : 'Not Verified'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="px-6 py-4 border-t border-gray-200">
+              <button
+                onClick={() => setShowProfileView(false)}
+                className="w-full px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors duration-200"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Hidden file inputs */}
       <input
         ref={fileInputRef}
         type="file"
         accept="image/*"
-        onChange={handleImageSelect}
-        className="hidden"
-      />
-      <input
-        ref={cameraInputRef}
-        type="file"
-        accept="image/*"
-        capture="environment"
         onChange={handleImageSelect}
         className="hidden"
       />
