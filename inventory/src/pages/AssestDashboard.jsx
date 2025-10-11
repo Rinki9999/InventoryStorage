@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Warehouse, Settings, LogOut, ChevronDown } from 'lucide-react';
 import { useNavigate, Link, useParams } from 'react-router-dom';
-import { logOut, onAuthChange, db, collection, onSnapshot } from '../firebase'; // replace path with actual firebase config file
+import { logOut, onAuthChange, db, collection, onSnapshot, sendNotification } from '../firebase';
+import NotificationBell from '../components/NotificationBell';
 
 
 
@@ -35,6 +36,44 @@ const ChartColors = {
 
 const isAssetUrgent = (status) =>
   status === 'Low Stock' || status === 'Expired' || status === 'Damaged';
+
+// Notification handlers for different asset conditions
+const handleAssetNotification = async (asset, status) => {
+  let type;
+  let recipients = ['admin'];
+
+  // Add category-specific recipients
+  if (asset.category === 'IT') {
+    recipients.push('it_council');
+  } else if (asset.category === 'Health') {
+    recipients.push('health_council');
+  }
+
+  switch (status) {
+    case 'Low Stock':
+      type = 'low_stock';
+      break;
+    case 'Expired':
+      type = 'expired';
+      break;
+    case 'Damaged':
+      type = 'damaged';
+      break;
+    default:
+      type = 'update';
+  }
+
+  await sendNotification(type, asset, recipients);
+};
+
+// Example: Send a test notification for IT equipment
+const testNotification = {
+  name: "Laptop",
+  category: "IT",
+  qty: 2,
+  status: "Low Stock"
+};
+handleAssetNotification(testNotification, "Low Stock");
 
 const API_MODEL = 'gemini-2.5-flash-preview-05-20';
 const API_KEY = "";
@@ -133,10 +172,13 @@ const NavItem = ({ title, icon: Icon, dropdownItems, currentUser, navigate }) =>
 const Navbar = ({ userRole }) => {
   const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState(null);
+  const [userRole, setUserRole] = useState('admin'); // You can update this based on your auth logic
 
   useEffect(() => {
     const unsubscribe = onAuthChange((user) => {
       setCurrentUser(user || null);
+      // Here you can also fetch user role from your database
+      // For now we're defaulting to 'admin'
     });
     return () => unsubscribe && unsubscribe();
   }, []);
@@ -203,13 +245,16 @@ const Navbar = ({ userRole }) => {
           <span className="hidden lg:inline text-sm font-medium opacity-90">
             Hello, {currentUser ? currentUser.displayName || currentUser.email : "Guest"}
           </span>
-          <button
-            onClick={handleLogout}
-            className="flex items-center bg-red-500 hover:bg-red-600 px-4 py-2 rounded-full text-sm font-semibold"
-          >
-            <LogOut className="w-4 h-4 mr-1" />
-            Logout
-          </button>
+          <div className="flex items-center space-x-4">
+            <NotificationBell userRole={userRole} />
+            <button
+              onClick={handleLogout}
+              className="flex items-center bg-red-500 hover:bg-red-600 px-4 py-2 rounded-full text-sm font-semibold"
+            >
+              <LogOut className="w-4 h-4 mr-1" />
+              Logout
+            </button>
+          </div>
           {/* 👇👇👇 ADD THIS BACK BUTTON */}
           <button
             onClick={handleBack}
@@ -987,7 +1032,7 @@ export default function App() {
                 >
                   {/* Left Arrow SVG Icon */}
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7 7-7m-7 7h18" />
                   </svg>
                 </button>
               )}

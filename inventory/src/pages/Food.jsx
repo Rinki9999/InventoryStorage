@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { db, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot } from '../firebase';
-import { useNavigate } from "react-router-dom"; // Add this import at the top
+import { useNavigate } from "react-router-dom";
+import { db } from '../firebase';
+import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, serverTimestamp } from 'firebase/firestore';
+import NotificationBell from '../components/NotificationBell';
 
 
 // Load Tone.js from CDN (Assuming this is available in the environment)
@@ -488,7 +490,67 @@ export default function App() {
                 // 'notes' field removed from the object
             };
 
-            await addDoc(collection(db, 'foodItems'), newItem);
+            const addedDoc = await addDoc(collection(db, 'foodItems'), newItem);
+            
+            // Add notification for new item
+            const notificationPromises = [];
+            notificationPromises.push(
+                addDoc(collection(db, 'notifications'), {
+                    title: 'New Item Added',
+                    message: `${name} has been added to inventory`,
+                    type: 'add',
+                    read: false,
+                    createdAt: serverTimestamp(),
+                    recipientRoles: ['admin', 'council'],
+                    itemDetails: {
+                        name: name,
+                        quantity: quantity,
+                        expiryDate: expiryDate
+                    }
+                })
+            );
+
+            // Check for low stock
+            if (quantity < STOCK_LIMIT) {
+                notificationPromises.push(
+                    addDoc(collection(db, 'notifications'), {
+                        title: 'Low Stock Alert',
+                        message: `${name} is running low (${quantity} left)`,
+                        type: 'low_stock',
+                        read: false,
+                        createdAt: serverTimestamp(),
+                        recipientRoles: ['admin', 'council'],
+                        itemDetails: {
+                            name: name,
+                            quantity: quantity,
+                            expiryDate: expiryDate
+                        }
+                    })
+                );
+            }
+
+            // Check for expiring soon
+            const daysLeft = getDaysUntilExpiry(expiryDate);
+            if (daysLeft >= 0 && daysLeft <= EXPIRY_WARNING_DAYS) {
+                notificationPromises.push(
+                    addDoc(collection(db, 'notifications'), {
+                        title: 'Expiry Warning',
+                        message: `${name} expires in ${daysLeft} days`,
+                        type: 'expiring_soon',
+                        read: false,
+                        createdAt: serverTimestamp(),
+                        recipientRoles: ['admin', 'council'],
+                        itemDetails: {
+                            name: name,
+                            quantity: quantity,
+                            expiryDate: expiryDate
+                        }
+                    })
+                );
+            }
+
+            await Promise.all(notificationPromises);
+
             form.reset();
             form.elements['item-quantity-input'].value = "1";
             showMessage(name, 'success');
@@ -503,6 +565,66 @@ export default function App() {
             const itemRef = doc(db, 'foodItems', updatedItem.id);
             const { id, ...updateData } = updatedItem;
             await updateDoc(itemRef, updateData);
+            
+            // Add notification for item update
+            const notificationPromises = [];
+            notificationPromises.push(
+                addDoc(collection(db, 'notifications'), {
+                    title: 'Item Updated',
+                    message: `${updatedItem.name} has been updated`,
+                    type: 'update',
+                    read: false,
+                    createdAt: serverTimestamp(),
+                    recipientRoles: ['admin', 'council'],
+                    itemDetails: {
+                        name: updatedItem.name,
+                        quantity: updatedItem.quantity,
+                        expiryDate: updatedItem.expiryDate
+                    }
+                })
+            );
+
+            // Check for low stock
+            if (updatedItem.quantity < STOCK_LIMIT) {
+                notificationPromises.push(
+                    addDoc(collection(db, 'notifications'), {
+                        title: 'Low Stock Alert',
+                        message: `${updatedItem.name} is running low (${updatedItem.quantity} left)`,
+                        type: 'low_stock',
+                        read: false,
+                        createdAt: serverTimestamp(),
+                        recipientRoles: ['admin', 'council'],
+                        itemDetails: {
+                            name: updatedItem.name,
+                            quantity: updatedItem.quantity,
+                            expiryDate: updatedItem.expiryDate
+                        }
+                    })
+                );
+            }
+
+            // Check for expiring soon
+            const daysLeft = getDaysUntilExpiry(updatedItem.expiryDate);
+            if (daysLeft >= 0 && daysLeft <= EXPIRY_WARNING_DAYS) {
+                notificationPromises.push(
+                    addDoc(collection(db, 'notifications'), {
+                        title: 'Expiry Warning',
+                        message: `${updatedItem.name} expires in ${daysLeft} days`,
+                        type: 'expiring_soon',
+                        read: false,
+                        createdAt: serverTimestamp(),
+                        recipientRoles: ['admin', 'council'],
+                        itemDetails: {
+                            name: updatedItem.name,
+                            quantity: updatedItem.quantity,
+                            expiryDate: updatedItem.expiryDate
+                        }
+                    })
+                );
+            }
+
+            await Promise.all(notificationPromises);
+
             setEditingItem(null);
             showMessage(updatedItem.name, 'update');
             if (currentPage === 'DETAILS' && selectedItem?.id === updatedItem.id) {
@@ -517,6 +639,20 @@ export default function App() {
     const handleDeleteItem = async (itemId, itemName) => {
         try {
             await deleteDoc(doc(db, 'foodItems', itemId));
+            
+            // Add notification for item deletion
+            await addDoc(collection(db, 'notifications'), {
+                title: 'Item Deleted',
+                message: `${itemName} has been removed from inventory`,
+                type: 'delete',
+                read: false,
+                createdAt: serverTimestamp(),
+                recipientRoles: ['admin', 'council'],
+                itemDetails: {
+                    name: itemName
+                }
+            });
+
             showMessage(itemName, 'delete');
             if (currentPage === 'DETAILS' && selectedItem?.id === itemId) {
                 setCurrentPage('DASHBOARD');
@@ -542,6 +678,24 @@ export default function App() {
     // Back button handler
     const handleBack = () => {
         navigate(-1); // This will take user to previous page
+    };
+
+    // Add test notification
+    const addTestNotification = async () => {
+        try {
+            await addDoc(collection(db, 'notifications'), {
+                title: 'Inventory Update',
+                message: 'Test notification for inventory update',
+                type: 'update',
+                read: false,
+                createdAt: serverTimestamp(),
+                recipientRoles: ['admin', 'council']
+            });
+            showMessage('Notification created successfully', 'success');
+        } catch (error) {
+            console.error('Error adding notification:', error);
+            showMessage('Error creating notification', 'error');
+        }
     };
 
     // --- UI HELPERS ---
@@ -570,27 +724,19 @@ export default function App() {
         // Default: Render the main Dashboard
         return (
             <>
-                {/* Dashboard Header with Back Button on Top Right */}
+                {/* Dashboard Header with Back Button and Notification Bell */}
                 <header className="relative mb-6 max-w-4xl mx-auto">
-                    <h1 className="text-4xl font-extrabold text-gray-800 text-center">📊 Food Asset Management Dashboard</h1>
-                    <p className="text-gray-500 mt-2 text-center">15-Day Stock Management and Waste Prevention</p>
-                    {/* Centered Alarm Button and Checked Date */}
-                    <div className="flex flex-col items-center mt-4">
-                        <button
-                            onClick={handleManualAlarmCheck}
-                            className="inline-flex items-center px-4 py-2 bg-orange-500 text-white font-semibold rounded-xl hover:bg-orange-600 transition duration-150 shadow-md transform active:scale-95"
-                        >
-                            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.405L4 17h5m6 0v1a3 3 0 11-6 0v-1"></path>
-                            </svg>
-                            Check Alarm Manually
-                        </button>
-                        <p className="text-xs text-gray-400 mt-1 text-center">
-                            <span className="font-semibold">
-                                Checked Date: {MOCK_TODAY.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
-                            </span>
-                        </p>
+                    <div className="flex justify-between items-start mb-4">
+                        <div className="flex-1">
+                            <h1 className="text-4xl font-extrabold text-gray-800 text-center">📊 Food Asset Management Dashboard</h1>
+                            <p className="text-gray-500 mt-2 text-center">15-Day Stock Management and Waste Prevention</p>
+                        </div>
+                        <div className="absolute right-0 top-0">
+                            <NotificationBell userRole="admin" />
+                        </div>
                     </div>
+                    {/* Centered Alarm Button and Checked Date */}
+                    
                 </header>
 
 
@@ -792,3 +938,45 @@ export default function App() {
         </div>
     );
 }
+
+// Example of adding a test notification (you can run this in your browser console)
+// addDoc(collection(db, 'notifications'), {
+//     title: 'Test Notification',
+//     message: 'This is a test notification',
+//     type: 'update',
+//     read: false,
+//     createdAt: Timestamp.now(),
+//     recipientRoles: ['admin', 'council']
+// });
+
+async function testNotification() {
+    const { addDoc, collection, serverTimestamp } = firebase.firestore;
+    const db = firebase.firestore();
+    
+    try {
+        await addDoc(collection(db, 'notifications'), {
+            title: 'Test Notification',
+            message: 'This is a test notification',
+            type: 'update',
+            read: false,
+            createdAt: serverTimestamp(),
+            recipientRoles: ['admin', 'council']
+        });
+        console.log('Notification added successfully');
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}
+
+testNotification();
+
+// // Firestore security rules
+// rules_version = '2';
+// service cloud.firestore {
+//   match /databases/{database}/documents {
+//     match /notifications/{document=**} {
+//       allow read: if true;
+//       allow write: if true;
+//     }
+//   }
+// }
