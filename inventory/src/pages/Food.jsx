@@ -6,7 +6,7 @@ import { useNavigate } from "react-router-dom"; // Add this import at the top
 // Load Tone.js from CDN (Assuming this is available in the environment)
 const Tone = window.Tone;
 
-// -------------------------- (1) CONSTANTS & UTILITIES --------------------------
+// -------------------------- (1) CONSTANTS & UTILITIES --- -----------------------
 
 const STOCK_LIMIT = 2; // Low stock threshold: less than 2
 const EXPIRY_WARNING_DAYS = 5; // CRITICAL: Days for expiry warning/notification
@@ -646,21 +646,13 @@ export default function App() {
                             ))}
                         </div>
 
-                        {/* Search and Sort */}
+                        {/* Search Bar */}
                         <div className="flex flex-col sm:flex-row gap-4">
                             <div className="relative flex-grow">
                                 <input type="text" onChange={(e) => setCurrentSearch(e.target.value)} placeholder="Search by Item Name..."
                                     className="w-full p-3 pl-10 border border-gray-300 rounded-xl focus:ring-indigo-500 focus:border-indigo-500 transition duration-150" />
                                 <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                             </div>
-
-                            <select value={currentSort} onChange={(e) => setCurrentSort(e.target.value)}
-                                className="w-full sm:w-64 p-3 border border-gray-300 rounded-xl appearance-none bg-white pr-8 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150">
-                                <option value="expiry_asc">Sort: Expiry Date (Soonest)</option>
-                                <option value="expiry_desc">Sort: Expiry Date (Latest)</option>
-                                <option value="quantity_asc">Sort: Quantity (Low to High)</option>
-                                <option value="quantity_desc">Sort: Quantity (High to Low)</option>
-                            </select>
                         </div>
                     </section>
 
