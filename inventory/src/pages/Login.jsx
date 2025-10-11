@@ -38,7 +38,16 @@ export default function Login() {
     setError("");
     setLoading(true);
     try {
-      await signInWithGoogle();
+      const userCredential = await signInWithGoogle();
+      const user = userCredential.user;
+      
+      // Check if user role is already saved
+      const existingRole = localStorage.getItem(`userRole_${user.uid}`);
+      if (!existingRole) {
+        // If no role exists, save the selected role (default to 'Student')
+        localStorage.setItem(`userRole_${user.uid}`, role);
+        console.log("Google user signed in with role:", role);
+      }
     } catch (err) {
       setError(err.message);
     } finally {
@@ -51,8 +60,14 @@ export default function Login() {
     setLoading(true);
     try {
       if (mode === "signup") {
-        await signUpWithEmail(email, password);
-        // You can store firstName, lastName, role in Firestore here
+        const userCredential = await signUpWithEmail(email, password);
+        const user = userCredential.user;
+        
+        // Save user role to localStorage for immediate access
+        localStorage.setItem(`userRole_${user.uid}`, role);
+        
+        // You can also store firstName, lastName, role in Firestore here if needed
+        console.log("User signed up with role:", role);
       } else {
         await signInWithEmail(email, password);
       }
