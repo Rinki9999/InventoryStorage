@@ -172,15 +172,15 @@ const NavItem = ({ title, icon: Icon, dropdownItems, currentUser, navigate }) =>
 const Navbar = ({ userRole }) => {
   const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState(null);
-  const [userRole, setUserRole] = useState('admin'); // You can update this based on your auth logic
+  const [currentUserRole, setCurrentUserRole] = useState('admin');
 
   useEffect(() => {
     const unsubscribe = onAuthChange((user) => {
-      setCurrentUser(user || null);
-      // Here you can also fetch user role from your database
-      // For now we're defaulting to 'admin'
+      if (user) setCurrentUser(user);
+      else setCurrentUser(null);
     });
-    return () => unsubscribe && unsubscribe();
+
+    return () => unsubscribe();
   }, []);
 
   // Define all navigation options
@@ -201,7 +201,7 @@ const Navbar = ({ userRole }) => {
 
   // Filter navigation based on user role
   const navStructure = allNavOptions.filter(navItem => 
-    navItem.allowedRoles.includes(userRole)
+    navItem.allowedRoles.includes(currentUserRole)
   );
 
   const handleLogout = async () => {
@@ -246,7 +246,7 @@ const Navbar = ({ userRole }) => {
             Hello, {currentUser ? currentUser.displayName || currentUser.email : "Guest"}
           </span>
           <div className="flex items-center space-x-4">
-            <NotificationBell userRole={userRole} />
+            <NotificationBell userRole={currentUserRole} />
             <button
               onClick={handleLogout}
               className="flex items-center bg-red-500 hover:bg-red-600 px-4 py-2 rounded-full text-sm font-semibold"
