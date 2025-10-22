@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { db, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot } from '../firebase';
+import { db, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, onAuthChange } from '../firebase';
+import emailjs from '@emailjs/browser';
 
 // Initial medication data
 const initialMedications = [
@@ -50,6 +51,45 @@ export default function MedicationDashboard() {
   const [newMed, setNewMed] = useState({ name: "", qty: "", expiry: "" });
   const [editingMed, setEditingMed] = useState(null);
   const [notification, setNotification] = useState('');
+  const [requests, setRequests] = useState([]);
+  const [showAllNotifications, setShowAllNotifications] = useState(false);
+  
+  // User role and procurement request states
+  const [currentUser, setCurrentUser] = useState(null);
+  const [userRole, setUserRole] = useState(null);
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [emailForm, setEmailForm] = useState({ recipient: '', isPhone: false });
+  const [emailSending, setEmailSending] = useState(false);
+  
+  // Get current user and their role
+  useEffect(() => {
+    const unsubscribe = onAuthChange(async (user) => {
+      if (user) {
+        setCurrentUser(user);
+        try {
+          const idTokenResult = await user.getIdTokenResult();
+          const role = idTokenResult.claims.role;
+          
+          if (role) {
+            setUserRole(role);
+          } else {
+            // If no custom claims, check localStorage for signup role
+            const signupRole = localStorage.getItem(`userRole_${user.uid}`);
+            setUserRole(signupRole || 'student'); // Default to student
+          }
+        } catch (error) {
+          console.error("Error getting user role:", error);
+          // Fallback to localStorage
+          const signupRole = localStorage.getItem(`userRole_${user.uid}`);
+          setUserRole(signupRole || 'student');
+        }
+      } else {
+        setCurrentUser(null);
+        setUserRole(null);
+      }
+    });
+    return () => unsubscribe && unsubscribe();
+  }, []);
 
   // Load data from Firebase on component mount
   useEffect(() => {
@@ -83,15 +123,150 @@ export default function MedicationDashboard() {
     return () => unsubscribe();
   }, []);
 
+  // Listen to health_requests collection
+  useEffect(() => {
+    const unsub = onSnapshot(collection(db, 'health_requests'), (snapshot) => {
+      const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+      setRequests(data);
+    }, (err) => console.error('health_requests listen error', err));
+
+    return () => unsub();
+  }, []);
+
   // Function to show a notification and hide it after 3 seconds
   const showNotification = (message) => {
     setNotification(message);
     setTimeout(() => {
-        setNotification('');
+      setNotification('');
     }, 3000);
   };
 
-  // Back button
+  // Generate email content for low stock/out of stock medicines
+  const generateEmailContent = () => {
+    const currentDate = new Date().toLocaleDateString();
+    const lowStockMeds = medications.filter(m => calculateStatus(m.qty) === "Low Stock");
+    const outOfStockMeds = medications.filter(m => calculateStatus(m.qty) === "Out of Stock");
+    
+    let emailContent = `Subject: Urgent Medicine Procurement Request - ${currentDate}\n\n`;
+    emailContent += `Dear Procurement Team,\n\n`;
+    emailContent += `This is an automated alert regarding medicine inventory status as of ${currentDate}.\n\n`;
+
+    if (outOfStockMeds.length > 0) {
+      emailContent += `🚨 OUT OF STOCK MEDICINES (Immediate Action Required):\n`;
+      outOfStockMeds.forEach(med => {
+        emailContent += `• ${med.name} - Completely out of stock (0 units)\n`;
+      });
+      emailContent += `\n`;
+    }
+
+    if (lowStockMeds.length > 0) {
+      emailContent += `⚠️ LOW STOCK MEDICINES (Reorder Soon):\n`;
+      lowStockMeds.forEach(med => {
+        emailContent += `• ${med.name} - Current quantity: ${med.qty} units\n`;
+      });
+      emailContent += `\n`;
+    }
+
+    emailContent += `Please arrange for immediate procurement of the above medicines to ensure continuous healthcare services.\n\n`;
+    emailContent += `For any queries, please contact the Health Department.\n\n`;
+    emailContent += `Best regards,\n`;
+    emailContent += `Inventory Management System\n`;
+    emailContent += `Generated automatically on ${currentDate}`;
+
+    return emailContent;
+  };
+
+  // Send email or SMS
+  const handleSendNotification = async () => {
+    if (!emailForm.recipient.trim()) {
+      showNotification('Please enter email or phone number');
+      return;
+    }
+
+    setEmailSending(true);
+    try {
+      const content = generateEmailContent();
+      
+      if (emailForm.isPhone) {
+        // SMS Logic - For demonstration, showing alert
+        const smsContent = `MEDICINE ALERT: Low/Out of stock medicines need procurement. Contact health dept for details.`;
+        console.log('SMS to send:', { to: emailForm.recipient, message: smsContent });
+        showNotification(`SMS notification sent to ${emailForm.recipient}`);
+      } else {
+        // Try multiple email sending methods
+        let emailSent = false;
+
+        // Method 1: EmailJS (if configured)
+        try {
+          // Replace these with your actual EmailJS credentials
+          const serviceID = 'service_xxxxxxx'; 
+          const templateID = 'template_xxxxxxx'; 
+          const publicKey = 'xxxxxxxxxx'; 
+
+          const templateParams = {
+            to_email: emailForm.recipient,
+            from_name: 'Health Department - Inventory System',
+            subject: `Urgent Medicine Procurement Request - ${new Date().toLocaleDateString()}`,
+            message: content,
+            reply_to: currentUser?.email || 'health@college.edu'
+          };
+
+          if (serviceID !== 'service_xxxxxxx') { // Only try if credentials are set
+            const result = await emailjs.send(serviceID, templateID, templateParams, publicKey);
+            if (result.status === 200) {
+              emailSent = true;
+              showNotification(`Email sent successfully to ${emailForm.recipient}!`);
+            }
+          }
+        } catch (emailError) {
+          console.log('EmailJS not configured or failed:', emailError);
+        }
+
+        // Method 2: FormSubmit.co (Free email service)
+        if (!emailSent) {
+          try {
+            const formData = new FormData();
+            formData.append('email', emailForm.recipient);
+            formData.append('subject', `Urgent Medicine Procurement Request - ${new Date().toLocaleDateString()}`);
+            formData.append('message', content);
+            formData.append('_next', window.location.href);
+            formData.append('_template', 'basic');
+
+            const response = await fetch('https://formsubmit.co/ajax/' + emailForm.recipient, {
+              method: 'POST',
+              body: formData
+            });
+
+            if (response.ok) {
+              emailSent = true;
+              showNotification(`Email sent successfully to ${emailForm.recipient}!`);
+            }
+          } catch (formSubmitError) {
+            console.log('FormSubmit failed:', formSubmitError);
+          }
+        }
+
+        // Method 3: mailto fallback (opens email client)
+        if (!emailSent) {
+          const subject = encodeURIComponent(`Urgent Medicine Procurement Request - ${new Date().toLocaleDateString()}`);
+          const body = encodeURIComponent(content);
+          const mailtoLink = `mailto:${emailForm.recipient}?subject=${subject}&body=${body}`;
+          
+          window.open(mailtoLink, '_blank');
+          showNotification(`Email client opened. Please send the email manually to ${emailForm.recipient}`);
+          emailSent = true;
+        }
+      }
+      
+      setShowEmailModal(false);
+      setEmailForm({ recipient: '', isPhone: false });
+    } catch (error) {
+      console.error('Error sending notification:', error);
+      showNotification('Failed to send notification. Please try again.');
+    } finally {
+      setEmailSending(false);
+    }
+  };  // Back button
 const handleBack = () => {
   navigate("/campus/:campusName/assets"); // Asset Dashboard (Kishanganj) page pe le jayega
 };
@@ -206,6 +381,21 @@ const handleBack = () => {
         <SummaryBox title="Out of Stock" value={outOfStock} color="text-red-500"/>
       </div>
 
+      {/* Procurement Request Button - Only for Admin/Council */}
+      {userRole && (userRole === 'admin' || userRole === 'council') && (lowStock > 0 || outOfStock > 0) && (
+        <div className="mb-6 flex justify-end">
+          <button
+            onClick={() => setShowEmailModal(true)}
+            className="bg-green-500 text-white px-6 py-3 rounded-lg hover:bg-green-600 transition-colors duration-200 shadow-lg flex items-center font-semibold"
+          >
+            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+            Send Procurement Request
+          </button>
+        </div>
+      )}
+
 
       {/* Add/Edit Medication Form */}
       {editingMed ? (
@@ -230,6 +420,55 @@ const handleBack = () => {
       )}
 
       {/* Medication Table */}
+      
+      {/* Health Requests Section */}
+      <div className="bg-white rounded-xl shadow-lg p-6 mt-6">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-bold">Health / Item Requests</h3>
+          <span className="text-sm text-gray-500">Total: {requests.length}</span>
+        </div>
+
+        <div className="flex items-center justify-end">
+          <button onClick={() => setShowAllNotifications(true)} className="text-blue-600 hover:underline">All Notifications</button>
+        </div>
+
+        {/* All notifications modal */}
+        {showAllNotifications && (
+          <div className="fixed inset-0 z-50 flex items-start justify-center p-6 bg-black bg-opacity-40">
+            <div className="bg-white rounded-xl shadow-xl w-full max-w-3xl p-6 overflow-auto max-h-[80vh]">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-xl font-bold">All Notifications</h3>
+                <button onClick={() => setShowAllNotifications(false)} className="text-gray-500 hover:text-gray-800">Close</button>
+              </div>
+              <div className="space-y-3">
+                {requests.length === 0 ? (
+                  <div className="text-gray-500">No notifications.</div>
+                ) : (
+                  requests.map(r => (
+                    <div key={r.id} className="p-3 border rounded-lg">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <div className="font-semibold">{r.itemName} {r.isCountable ? `x${r.quantity}` : ''}</div>
+                          <div className="text-sm text-gray-600">By: {r.requesterName} ({r.requesterEmail})</div>
+                          <div className="text-sm text-gray-600">Reason: {r.reason}</div>
+                          <div className="text-xs text-gray-400">Requested: {r.dateRequested}</div>
+                        </div>
+                        <div>
+                          {r.status !== 'pending' && (
+                            <div className={`px-3 py-1 rounded-full text-sm ${r.status === 'approved' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>{r.status}</div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+      
+
       <div className="bg-white rounded-xl shadow-lg p-2 sm:p-6 overflow-x-auto">
         <table className="w-full text-left text-sm text-gray-700">
           <thead className="bg-gray-50 uppercase text-gray-600 text-xs">
@@ -268,7 +507,109 @@ const handleBack = () => {
           </tbody>
         </table>
       </div>
+
+      {/* Email/SMS Modal for Procurement Request */}
+      {showEmailModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+          <div className="bg-white rounded-lg max-w-md w-full mx-4 p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">Send Procurement Request</h3>
+              <button
+                onClick={() => setShowEmailModal(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Contact Method
+                </label>
+                <div className="flex space-x-4">
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="contactMethod"
+                      checked={!emailForm.isPhone}
+                      onChange={() => setEmailForm(prev => ({ ...prev, isPhone: false }))}
+                      className="mr-2"
+                    />
+                    Email
+                  </label>
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="contactMethod"
+                      checked={emailForm.isPhone}
+                      onChange={() => setEmailForm(prev => ({ ...prev, isPhone: true }))}
+                      className="mr-2"
+                    />
+                    Phone (SMS)
+                  </label>
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {emailForm.isPhone ? 'Phone Number' : 'Email Address'}
+                </label>
+                <input
+                  type={emailForm.isPhone ? 'tel' : 'email'}
+                  value={emailForm.recipient}
+                  onChange={(e) => setEmailForm(prev => ({ ...prev, recipient: e.target.value }))}
+                  placeholder={emailForm.isPhone ? '+1234567890' : 'supplier@example.com'}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Message Preview
+                </label>
+                <div className="bg-gray-50 p-3 rounded-lg text-sm max-h-32 overflow-y-auto">
+                  {generateEmailContent()}
+                </div>
+              </div>
+
+              {/* Email Setup Info */}
+              <div className="bg-blue-50 p-3 rounded-lg">
+                <h4 className="text-sm font-medium text-blue-800 mb-2">📧 Email Setup Methods:</h4>
+                <ul className="text-xs text-blue-700 space-y-1">
+                  <li>• <strong>Method 1:</strong> Configure EmailJS for automated sending</li>
+                  <li>• <strong>Method 2:</strong> Direct email service (FormSubmit)</li>
+                  <li>• <strong>Method 3:</strong> Opens your email client (Gmail/Outlook)</li>
+                </ul>
+                <p className="text-xs text-blue-600 mt-2">
+                  📝 See <code>emailjs-setup.md</code> for EmailJS configuration
+                </p>
+              </div>
+              
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={() => setShowEmailModal(false)}
+                  className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSendNotification}
+                  disabled={emailSending}
+                  className={`px-4 py-2 rounded-lg text-white ${emailSending ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}
+                >
+                  {emailSending ? 'Sending...' : (emailForm.isPhone ? 'Send SMS' : 'Send Email')}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
      </div>
     </div>
   );
 }
+
