@@ -177,8 +177,7 @@ const Navbar = ({ userRole }) => {
 
   useEffect(() => {
     const unsubscribe = onAuthChange((user) => {
-      if (user) setCurrentUser(user);
-      else setCurrentUser(null);
+      setCurrentUser(user || null);
     });
 
     return () => unsubscribe();
@@ -242,8 +241,20 @@ const Navbar = ({ userRole }) => {
           </nav>
         </div>
 
-        <div className="flex items-center space-x-4">
-          <NotificationBell userRole={effectiveRole} />
+        <div className="flex items-center space-x-6">
+          <span className="hidden lg:inline text-sm font-medium opacity-90">
+            Hello, {currentUser ? currentUser.displayName || currentUser.email : "Guest"}
+          </span>
+          <div className="flex items-center space-x-4">
+            <NotificationBell userRole={effectiveRole} />
+            <button
+              onClick={handleLogout}
+              className="flex items-center bg-red-500 hover:bg-red-600 px-4 py-2 rounded-full text-sm font-semibold"
+            >
+              <LogOut className="w-4 h-4 mr-1" />
+              Logout
+            </button>
+          </div>
           <button
             onClick={handleBack}
             className="flex items-center bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-full text-sm font-semibold ml-2"
