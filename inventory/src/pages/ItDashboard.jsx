@@ -123,6 +123,8 @@ export default function ITDashboard() {
   // Initialize state - will be loaded from Firebase
   const [laptops, setLaptops] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [laptopSubmissions, setLaptopSubmissions] = useState([]);
+  const [laptopReturns, setLaptopReturns] = useState([]);
 
   const [filter, setFilter] = useState('all');
   const [form, setForm] = useState({ id: null, name: '', owner: '', serialNumber: '', disk: '', model: '', memory: '', processor: '', osName: '', status: 'in-stock' });
@@ -164,6 +166,52 @@ export default function ITDashboard() {
     }, (error) => {
       console.error("Error loading laptops:", error);
       setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // Load laptop submissions from Firebase
+  useEffect(() => {
+    const unsubscribe = onSnapshot(collection(db, 'laptopSubmissions'), (snapshot) => {
+      const submissionsData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      
+      // Sort by timestamp, newest first
+      submissionsData.sort((a, b) => {
+        const timeA = a.timestamp?.toDate() || new Date(0);
+        const timeB = b.timestamp?.toDate() || new Date(0);
+        return timeB - timeA;
+      });
+      
+      setLaptopSubmissions(submissionsData);
+    }, (error) => {
+      console.error("Error loading laptop submissions:", error);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // Load laptop returns from Firebase
+  useEffect(() => {
+    const unsubscribe = onSnapshot(collection(db, 'laptopReturns'), (snapshot) => {
+      const returnsData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      
+      // Sort by timestamp, newest first
+      returnsData.sort((a, b) => {
+        const timeA = a.timestamp?.toDate() || new Date(0);
+        const timeB = b.timestamp?.toDate() || new Date(0);
+        return timeB - timeA;
+      });
+      
+      setLaptopReturns(returnsData);
+    }, (error) => {
+      console.error("Error loading laptop returns:", error);
     });
 
     return () => unsubscribe();
@@ -297,6 +345,18 @@ export default function ITDashboard() {
     } catch (error) {
       console.error("Error deleting laptop:", error);
       showToast('Error deleting laptop. Please try again.', 'error');
+    }
+  };
+
+  // Delete laptop return message
+  const deleteLaptopReturn = async (returnId) => {
+    try {
+      const returnRef = doc(db, 'laptopReturns', returnId);
+      await deleteDoc(returnRef);
+      showToast('Return message deleted successfully.', 'success');
+    } catch (error) {
+      console.error("Error deleting return message:", error);
+      showToast('Error deleting return message. Please try again.', 'error');
     }
   };
 
@@ -483,6 +543,119 @@ export default function ITDashboard() {
                 <div className="text-3xl font-extrabold text-gray-800 mt-1">{stats.outOfStock}</div>
             </div>
         </div>
+
+        {/* LAPTOP SUBMISSION NOTIFICATIONS */}
+        {laptopSubmissions.length > 0 && (
+          <div className="bg-white p-6 rounded-xl shadow-lg mb-8 border border-slate-100">
+            <h3 className="text-xl font-extrabold text-gray-800 mb-4 flex items-center gap-2">
+              <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+              New Laptop Submissions ({laptopSubmissions.length})
+            </h3>
+            
+            <div className="space-y-3 max-h-96 overflow-y-auto">
+              {laptopSubmissions.slice(0, 10).map((submission) => (
+                <div key={submission.id} className="p-4 border border-blue-200 rounded-lg bg-blue-50 hover:bg-blue-100 transition-colors">
+                  <div className="flex justify-between items-start mb-2">
+                    <div className="font-semibold text-gray-800">{submission.name}</div>
+                    <div className="text-sm text-gray-500">
+                      {submission.timestamp ? 
+                        new Date(submission.timestamp.toDate()).toLocaleDateString() + ' ' + 
+                        new Date(submission.timestamp.toDate()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+                        : 'Recently'
+                      }
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                    <div><span className="font-medium">Email:</span> {submission.email}</div>
+                    <div><span className="font-medium">Laptop Number:</span> {submission.laptopNumber}</div>
+                    <div><span className="font-medium">Submission Date:</span> {submission.submissionDate}</div>
+                    {submission.chargerNumber && (
+                      <div><span className="font-medium">Charger Number:</span> {submission.chargerNumber}</div>
+                    )}
+                  </div>
+                  
+                  <div className="mt-2 flex gap-2">
+                    <span className={`px-2 py-1 rounded text-xs font-medium ${
+                      submission.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 
+                      submission.status === 'approved' ? 'bg-green-100 text-green-800' :
+                      'bg-red-100 text-red-800'
+                    }`}>
+                      {submission.status?.toUpperCase() || 'PENDING'}
+                    </span>
+                  </div>
+                </div>
+              ))}
+              
+              {laptopSubmissions.length > 10 && (
+                <div className="text-center text-sm text-gray-500 pt-2">
+                  And {laptopSubmissions.length - 10} more submissions...
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* LAPTOP RETURN NOTIFICATIONS */}
+        {laptopReturns.length > 0 && (
+          <div className="bg-white p-6 rounded-xl shadow-lg mb-8 border border-slate-100">
+            <h3 className="text-xl font-extrabold text-gray-800 mb-4 flex items-center gap-2">
+              <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+              Laptop Returns ({laptopReturns.length})
+            </h3>
+            
+            <div className="space-y-3 max-h-96 overflow-y-auto">
+              {laptopReturns.slice(0, 10).map((returnItem) => (
+                <div key={returnItem.id} className="p-4 border border-green-200 rounded-lg bg-green-50 hover:bg-green-100 transition-colors">
+                  <div className="flex justify-between items-start mb-2">
+                    <div className="font-semibold text-gray-800">
+                      {returnItem.name} returned their laptop
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="text-sm text-gray-500">
+                        {returnItem.timestamp ? 
+                          new Date(returnItem.timestamp.toDate()).toLocaleDateString() + ' ' + 
+                          new Date(returnItem.timestamp.toDate()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+                          : 'Recently'
+                        }
+                      </div>
+                      <button
+                        onClick={() => deleteLaptopReturn(returnItem.id)}
+                        className="p-1 rounded-full hover:bg-red-200 text-red-600 hover:text-red-800 transition-colors"
+                        title="Delete this return message"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c0 1 1 2 2 2v2"/>
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                    <div><span className="font-medium">Email:</span> {returnItem.email}</div>
+                    <div><span className="font-medium">Laptop Number:</span> {returnItem.laptopNumber}</div>
+                    <div><span className="font-medium">Return Date:</span> {returnItem.returnDate}</div>
+                    {returnItem.chargerNumber && (
+                      <div><span className="font-medium">Charger Number:</span> {returnItem.chargerNumber}</div>
+                    )}
+                  </div>
+                  
+                  <div className="mt-2 flex gap-2">
+                    <span className="px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-800">
+                      RETURNED
+                    </span>
+                  </div>
+                </div>
+              ))}
+              
+              {laptopReturns.length > 10 && (
+                <div className="text-center text-sm text-gray-500 pt-2">
+                  And {laptopReturns.length - 10} more returns...
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* INVENTORY TABLE & CHART */}
         <div className="bg-white p-6 rounded-xl shadow-lg border border-slate-100">

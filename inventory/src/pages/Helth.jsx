@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { db, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, onAuthChange } from '../firebase';
 import emailjs from '@emailjs/browser';
+import MedicineUsageForm from '../components/MedicineUsageForm';
 
 // Initial medication data
 const initialMedications = [
@@ -60,6 +61,7 @@ export default function MedicationDashboard() {
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [emailForm, setEmailForm] = useState({ recipient: '', isPhone: false });
   const [emailSending, setEmailSending] = useState(false);
+  const [showUsageForm, setShowUsageForm] = useState(false);
   
   // Get current user and their role
   useEffect(() => {
@@ -396,6 +398,20 @@ const handleBack = () => {
         </div>
       )}
 
+      {/* Medicine Usage Instructions Button - Only for Admin/Council */}
+      {userRole && (userRole === 'admin' || userRole === 'council') && (
+        <div className="mb-6 flex justify-end">
+          <button
+            onClick={() => setShowUsageForm(true)}
+            className="bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition-colors duration-200 shadow-lg flex items-center font-semibold"
+          >
+            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+            </svg>
+            Add Medicine Usage Instructions
+          </button>
+        </div>
+      )}
 
       {/* Add/Edit Medication Form */}
       {editingMed ? (
@@ -606,6 +622,18 @@ const handleBack = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Medicine Usage Form Modal */}
+      {showUsageForm && (
+        <MedicineUsageForm 
+          onClose={() => setShowUsageForm(false)}
+          userRole={userRole}
+          onSubmit={(formData) => {
+            console.log('Medicine usage instructions added:', formData);
+            // Additional handling if needed
+          }}
+        />
       )}
 
      </div>

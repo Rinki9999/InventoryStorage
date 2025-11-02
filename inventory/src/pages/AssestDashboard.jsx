@@ -3,6 +3,10 @@ import { Warehouse, Settings, LogOut, ChevronDown } from 'lucide-react';
 import { useNavigate, Link, useParams } from 'react-router-dom';
 import { logOut, onAuthChange, db, collection, onSnapshot, sendNotification, addDoc, updateDoc, doc, query, where, getDocs, getDoc, runTransaction } from '../firebase';
 import NotificationBell from '../components/NotificationBell';
+import LaptopSubmissionForm from '../components/LaptopSubmissionForm';
+import LaptopReturnForm from '../components/LaptopReturnForm';
+import MedicineFormModal from '../components/MedicineFormModal';
+import MedicineUsageModal from '../components/MedicineUsageModal';
 
 
 
@@ -1073,6 +1077,11 @@ export default function App() {
   const [recommendation, setRecommendation] = useState({ assetName: '', text: '', status: '' });
   const [isGenerating, setIsGenerating] = useState(false);
   const [showRequestForm, setShowRequestForm] = useState(false);
+  const [showLaptopForm, setShowLaptopForm] = useState(false);
+  const [showReturnForm, setShowReturnForm] = useState(false);
+  const [showMedicineModal, setShowMedicineModal] = useState(false);
+  const [showUsageModal, setShowUsageModal] = useState(false);
+  const [medicineUsage, setMedicineUsage] = useState([]);
 
   // Get current user and their role
   useEffect(() => {
@@ -1215,6 +1224,29 @@ export default function App() {
     return () => {
       unsubscribeFunctions.forEach(unsubscribe => unsubscribe());
     };
+  }, []);
+
+  // Load medicine usage data from Firebase
+  useEffect(() => {
+    const unsubscribe = onSnapshot(collection(db, 'medicineUsage'), (snapshot) => {
+      const usageData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      
+      // Sort by timestamp, newest first
+      usageData.sort((a, b) => {
+        const timeA = a.timestamp?.toDate() || new Date(0);
+        const timeB = b.timestamp?.toDate() || new Date(0);
+        return timeB - timeA;
+      });
+      
+      setMedicineUsage(usageData);
+    }, (error) => {
+      console.error("Error loading medicine usage:", error);
+    });
+
+    return () => unsubscribe();
   }, []);
 
   // Filter Handler
@@ -1416,12 +1448,53 @@ export default function App() {
                   />
                 </div>
 
-                <div className="flex items-center justify-end mb-4">
-                  <button onClick={() => setShowRequestForm(prev => !prev)} className="bg-teal-600 text-white px-4 py-2 rounded-lg hover:bg-teal-700">Medicin form</button>
+                <div className="flex items-center justify-end gap-4 mb-4">
+                  <button onClick={() => setShowMedicineModal(true)} className="bg-teal-600 text-white px-4 py-2 rounded-lg hover:bg-teal-700">Medicin form</button>
+                  <button onClick={() => setShowUsageModal(true)} className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">Medicine Usage Instructions</button>
+                  <button onClick={() => setShowLaptopForm(true)} className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">Submit Laptop</button>
+                  <button onClick={() => setShowReturnForm(true)} className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700">Return Laptop</button>
                 </div>
 
                 {/* 3. Request Form (Health / Item requests) - collapsible */}
                 {showRequestForm && <RequestForm currentUser={currentUser} userRole={userRole} />}
+
+                {/* Laptop Submission Form Modal */}
+                {showLaptopForm && (
+                  <LaptopSubmissionForm 
+                    onClose={() => setShowLaptopForm(false)}
+                    onSubmit={(formData) => {
+                      console.log('Laptop submitted:', formData);
+                      // Additional handling if needed
+                    }}
+                  />
+                )}
+
+                {/* Laptop Return Form Modal */}
+                {showReturnForm && (
+                  <LaptopReturnForm 
+                    onClose={() => setShowReturnForm(false)}
+                    onReturn={(formData) => {
+                      console.log('Laptop returned:', formData);
+                      // Additional handling if needed
+                    }}
+                  />
+                )}
+
+                {/* Medicine Form Modal */}
+                {showMedicineModal && (
+                  <MedicineFormModal 
+                    onClose={() => setShowMedicineModal(false)}
+                    currentUser={currentUser}
+                    userRole={userRole}
+                  />
+                )}
+
+                {/* Medicine Usage Instructions Modal */}
+                {showUsageModal && (
+                  <MedicineUsageModal 
+                    onClose={() => setShowUsageModal(false)}
+                  />
+                )}
 
                 {/* 4. Assets Table (Pass filteredAssets) */}
                 <div className="w-full">
