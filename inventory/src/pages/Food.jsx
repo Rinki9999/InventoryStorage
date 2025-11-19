@@ -1,7 +1,15 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useNavigate } from "react-router-dom";
 import { db } from '../firebase';
-import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, serverTimestamp } from 'firebase/firestore';
+import { 
+    collection, 
+    addDoc, 
+    updateDoc, 
+    deleteDoc, 
+    doc, 
+    onSnapshot, 
+    serverTimestamp 
+} from 'firebase/firestore';
 import NotificationBell from '../components/NotificationBell';
 
 
@@ -10,8 +18,8 @@ const Tone = window.Tone;
 
 // -------------------------- (1) CONSTANTS & UTILITIES --- -----------------------
 
-const STOCK_LIMIT = 2; // Low stock threshold: less than 2
-const EXPIRY_WARNING_DAYS = 5; // CRITICAL: Days for expiry warning/notification
+const STOCK_LIMIT = 10; // Low stock threshold: less than 2
+const EXPIRY_WARNING_DAYS = 40; // Will show "Expiring Soon" for items expiring within 40 days
 const MOCK_TODAY = new Date('2025-10-01T00:00:00'); // Mock date for consistent testing
 
 // Mock Inventory Data (Initial State - 'notes' field removed for simplicity)
@@ -77,7 +85,16 @@ const NotificationToast = React.memo(({ message }) => {
             </div>
         </div>
     );
-});
+});{/* Unit Type */}
+<select 
+    id="item-unit-input" 
+    required
+    className="p-3 border border-gray-300 rounded-xl focus:ring-indigo-500 focus:border-indigo-500"
+>
+    <option value="kg">Kilograms (KG)</option>
+    <option value="g">Grams (g)</option>
+    <option value="L">Liters (L)</option>
+</select>
 
 
 // Component 2.2: Edit Item Modal ('notes' state and UI removed)
@@ -255,7 +272,7 @@ const DetailCard = ({ title, value, subValue, color }) => (
 
 // -------------------------- (3) MAIN APP COMPONENT --------------------------
 
-export default function App() {
+export default function Food() {
     const navigate = useNavigate(); // Add this line at the top of your component
 
     // --- STATE MANAGEMENT (React Hooks) ---
@@ -473,11 +490,12 @@ export default function App() {
         e.preventDefault();
         const form = e.target;
         const name = form.elements['item-name-input'].value.trim();
+        const manufacturingDate = form.elements['manufacturing-date-input'].value;
         const quantity = parseInt(form.elements['item-quantity-input'].value, 10);
+        const unitType = form.elements['item-unit-input'].value;
         const expiryDate = form.elements['item-expiry-input'].value;
-        // 'notes' field removed from here
 
-        if (!name || isNaN(quantity) || quantity < 0 || !expiryDate) {
+        if (!name || !manufacturingDate || isNaN(quantity) || quantity < 0 || !expiryDate || !unitType) {
             showMessage('Please fill all fields correctly.', 'error');
             return;
         }
@@ -485,9 +503,10 @@ export default function App() {
         try {
             const newItem = {
                 name: name,
+                manufacturingDate: manufacturingDate,
                 quantity: quantity,
+                unitType: unitType,
                 expiryDate: expiryDate,
-                // 'notes' field removed from the object
             };
 
             const addedDoc = await addDoc(collection(db, 'foodItems'), newItem);
@@ -731,9 +750,7 @@ export default function App() {
                             <h1 className="text-4xl font-extrabold text-gray-800 text-center">📊 Food Asset Management Dashboard</h1>
                             <p className="text-gray-500 mt-2 text-center">15-Day Stock Management and Waste Prevention</p>
                         </div>
-                        <div className="absolute right-0 top-0">
-                            <NotificationBell userRole="admin" />
-                        </div>
+                        {/* NotificationBell removed as requested */}
                     </div>
                     {/* Centered Alarm Button and Checked Date */}
                     
@@ -746,21 +763,65 @@ export default function App() {
                     {/* Add New Item Section - Now using 4 columns */}
                     <section className="bg-white p-4 sm:p-6 rounded-xl shadow-lg border border-gray-100">
                         <h2 className="text-2xl font-bold text-indigo-600 mb-4">➕ Add New Item</h2>
-                        <form onSubmit={handleAddItem} className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <form onSubmit={handleAddItem} className="grid grid-cols-1 md:grid-cols-6 gap-4">
                             {/* Item Name */}
-                            <input type="text" id="item-name-input" placeholder="Item Name (e.g., Flour)" required
-                                className="p-3 border border-gray-300 rounded-xl focus:ring-indigo-500 focus:border-indigo-500" />
+                            <input 
+                                type="text" 
+                                id="item-name-input" 
+                                placeholder="Item Name (e.g., Suji)" 
+                                required
+                                className="p-3 border border-gray-300 rounded-xl focus:ring-indigo-500 focus:border-indigo-500" 
+                            />
+
+                            {/* Manufacturing/Launch Date */}
+                            <div className="flex flex-col">
+                                <label className="text-sm text-gray-600 mb-1">Launch Date</label>
+                                <input 
+                                    type="date" 
+                                    id="manufacturing-date-input" 
+                                    required
+                                    className="p-3 border border-gray-300 rounded-xl focus:ring-indigo-500 focus:border-indigo-500" 
+                                />
+                            </div>
 
                             {/* Quantity */}
-                            <input type="number" id="item-quantity-input" placeholder="Quantity" required min="0" defaultValue="1"
-                                className="p-3 border border-gray-300 rounded-xl focus:ring-indigo-500 focus:border-indigo-500" />
+                            <input 
+                                type="number" 
+                                id="item-quantity-input" 
+                                placeholder="Quantity" 
+                                required 
+                                min="0" 
+                                defaultValue="1"
+                                className="p-3 border border-gray-300 rounded-xl focus:ring-indigo-500 focus:border-indigo-500" 
+                            />
+
+                            {/* Unit Type */}
+                            <select 
+                                id="item-unit-input" 
+                                required
+                                className="p-3 border border-gray-300 rounded-xl focus:ring-indigo-500 focus:border-indigo-500"
+                            >
+                                <option value="kg">Kilograms (KG)</option>
+                                <option value="g">Grams (G)</option>
+                                <option value="L">Liters (L)</option>
+                            </select>
 
                             {/* Expiry Date */}
-                            <input type="date" id="item-expiry-input" placeholder="Expiry Date" required
-                                className="p-3 border border-gray-300 rounded-xl focus:ring-indigo-500 focus:border-indigo-500" />
+                            <div className="flex flex-col">
+                                <label className="text-sm text-gray-600 mb-1">Expiry Date</label>
+                                <input 
+                                    type="date" 
+                                    id="item-expiry-input" 
+                                    required
+                                    className="p-3 border border-gray-300 rounded-xl focus:ring-indigo-500 focus:border-indigo-500" 
+                                />
+                            </div>
 
                             {/* Submit Button */}
-                            <button type="submit" className="bg-indigo-600 text-white font-bold py-3 rounded-xl hover:bg-indigo-700 transition duration-150 shadow-md">
+                            <button 
+                                type="submit" 
+                                className="bg-indigo-600 text-white font-bold py-3 rounded-xl hover:bg-indigo-700 transition duration-150 shadow-md"
+                            >
                                 Add to List
                             </button>
                         </form>
@@ -810,7 +871,6 @@ export default function App() {
                                     <tr>
                                         <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Item Name</th>
                                         <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Quantity</th>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Expiry Date</th>
                                         <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
                                         <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Actions</th>
                                     </tr>
@@ -818,44 +878,72 @@ export default function App() {
                                 <tbody className="bg-white divide-y divide-gray-200">
                                     {filteredInventory.length > 0 ? (
                                         filteredInventory.map(item => {
-                                            const daysLeftText = item.daysLeft === 0 ? 'Today' :
-                                                item.daysLeft > 0 ? `${item.daysLeft} days` :
-                                                    `${Math.abs(item.daysLeft)} days ago`;
+                                            // Calculate days until expiry
+                                            const daysLeft = getDaysUntilExpiry(item.expiryDate);
+                                            
+                                            let statusColor;
+                                            let statusText;
+
+                                            // Change the order of conditions - check expiry first
+                                            if (daysLeft <= EXPIRY_WARNING_DAYS && daysLeft >= 0) {
+                                                // Show Expiring Soon if within warning days
+                                                statusColor = 'text-orange-600 bg-orange-50';
+                                                statusText = 'Expiring Soon';
+                                            } else if (item.quantity < STOCK_LIMIT) {
+                                                // Then check for low stock
+                                                statusColor = 'text-red-600 bg-red-50';
+                                                statusText = 'Low Stock';
+                                            } else {
+                                                // Otherwise show as In Stock
+                                                statusColor = 'text-green-600 bg-green-50';
+                                                statusText = 'In Stock';
+                                            }
 
                                             return (
                                                 <tr key={item.id} className="hover:bg-gray-50 transition duration-100 ease-in-out">
-                                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{item.name}</td>
-                                                    <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${item.quantity < STOCK_LIMIT ? 'text-red-low font-bold' : 'text-gray-700'}`}>
-                                                        {item.quantity}
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                                        {item.name}
                                                     </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                        {item.expiryDate} ({daysLeftText})
+                                                    <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${
+                                                        item.quantity < STOCK_LIMIT ? 'text-red-600' : 'text-gray-700'
+                                                    }`}>
+                                                        {item.quantity} {item.unitType}
                                                     </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold">
-                                                        <span className={`inline-flex items-center text-xs font-bold leading-none rounded-full px-3 py-1 bg-opacity-10 ${getStatusClasses(item.color)}`}
-                                                            title={item.status}>
-                                                            <span dangerouslySetInnerHTML={{ __html: item.icon }} />
-                                                            {item.status}
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${statusColor}`}>
+                                                            {statusText}
+                                                            {statusText === 'Expiring Soon' && (
+                                                                <span className="ml-1 text-xs">
+                                                                    ({daysLeft} days left)
+                                                                </span>
+                                                            )}
                                                         </span>
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap text-left text-sm font-medium space-x-2 flex items-center">
-                                                        {/* View Details Button for Navigation */}
+                                                        {/* View Details Button */}
                                                         <button onClick={() => handleViewDetails(item)}
                                                             className="text-green-600 hover:text-green-900 bg-green-50 p-2 rounded-full transition duration-150 hover:bg-green-100"
                                                             title="View Details">
-                                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                                            </svg>
                                                         </button>
                                                         {/* Edit Button */}
                                                         <button onClick={() => setEditingItem(item)}
                                                             className="text-indigo-600 hover:text-indigo-900 bg-indigo-50 p-2 rounded-full transition duration-150 hover:bg-indigo-100"
                                                             title="Edit Item">
-                                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                                            </svg>
                                                         </button>
                                                         {/* Delete Button */}
                                                         <button onClick={() => handleDeleteItem(item.id, item.name)}
                                                             className="text-red-600 hover:text-red-900 bg-red-50 p-2 rounded-full transition duration-150 hover:bg-red-100"
                                                             title="Delete Item">
-                                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                                            </svg>
                                                         </button>
                                                     </td>
                                                 </tr>
@@ -863,7 +951,7 @@ export default function App() {
                                         })
                                     ) : (
                                         <tr>
-                                            <td colSpan="5" className="text-center p-10 text-gray-500">
+                                            <td colSpan="4" className="text-center p-10 text-gray-500">
                                                 No items match the current filter or search criteria.
                                             </td>
                                         </tr>
@@ -970,13 +1058,3 @@ async function testNotification() {
 
 testNotification();
 
-// // Firestore security rules
-// rules_version = '2';
-// service cloud.firestore {
-//   match /databases/{database}/documents {
-//     match /notifications/{document=**} {
-//       allow read: if true;
-//       allow write: if true;
-//     }
-//   }
-// }
