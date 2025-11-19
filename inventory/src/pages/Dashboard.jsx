@@ -15,18 +15,18 @@ const campuses = [
   { name: "Pune", region: "Maharashtra", imageUrl: "https://lh3.googleusercontent.com/gps-cs-s/AC9h4nq5rJf293eOaMT4c1vUXI6ayKjhO7Zn0XNhs08Whf1GcoyHTkIC-Q_m6qw2HJFinr7BDeUpuzZnyqGipCrTdasITZ2YoTsoksSp2HK6pvfFKr1CWgSLRf18W7D2g9VXSmbOXGa0lw=s680-w680-h510-rw" },
   { name: "Raigarh", region: "Chhattisgarh", imageUrl: "https://gmcraigarh.edu.in/assets/img/home1/s2.jpg" },
   { name: "Sarjapur", region: "Karnataka", imageUrl: "https://content.jdmagicbox.com/v2/comp/bangalore/w8/080pxx80.xx80.181203163638.t3w8/catalogue/navgurukul-bangalore-campus-huskur-bangalore-computer-training-insitutes-for-software-diploma-tqjmmkp00i.jpg" },
-  { name: "Udaipur", region: "Rajasthan", imageUrl: "https://lh3.googleusercontent.com/gps-cs-s/AC9h4npRn5v_3dPUDWq_OIfu2i98fQhXYfxAWvcLWAc6_PwcApawKb_2uXZ-NHN70yuMlp4C7Z7egnKSNLICfd0nA00e3Bjw3GEnezakiDFAX7sE4Jz6iJPZR_M-yAkv5Wqiog66-LgU=s680-w680-h510-rw" },
+  { name: "Udaipur", region: "Rajasthan", imageUrl: "https://prod-files-secure.s3.us-west-2.amazonaws.com/2303d035-6042-43e9-89d4-890b45490cb4/f8e3af75-e623-4bc1-ae04-a8cd9cef91c2/Rectangle_2936_%288%29.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=ASIAZI2LB466X2X6GY7G%2F20251021%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20251021T172107Z&X-Amz-Expires=3600&X-Amz-Security-Token=IQoJb3JpZ2luX2VjEGEaCXVzLXdlc3QtMiJGMEQCIHV6tNYkaYmyRN3CeYa731dieplWnA%2F0egysTv4Azv%2FrAiB9pmRfnzoz9oqB4R9LMHHCsRXzo26TGlxaxLNzG7N2wir%2FAwgaEAAaDDYzNzQyMzE4MzgwNSIMmgiUNW1rESj88BfzKtwDs%2FXj4C9GYSGf6LA%2BNv2zb8r5EqtDTSjYlvGnci%2FelLAUiKQDt6Xv1Cl52uUcnZEMioj60hIRrI8VcqvlbngAF%2F8Y58k1baVoFZMDINU%2Fre8joMRfjwWGF8Ja52%2BRQj5DCv8HVk6mejMgauuHNXaUhSsmRLkrzcB2rErrZztZ2Tq8dAb2y%2FmQ5nLc1UINiIokG%2FFitKd%2BGib446L5CVGFsORFTboUoMUYusU%2BU9CDQQF257%2FI8oVYwRRKZFClKbHgzHntx8UIhHObqtg9MNloRb4DKw3TGmeNpOJJz8zRYOs69FRw1hoVKbBMaCh6P34WzXr7H5btwePujCdwNb9sESHrQNH1Dd2rZl26SIomRdM%2BcocReB%2FRQ2QY7My4HXlkUxepfJAY2sv8HaHDplBwXLqb0SDgvgXxI2DlYdKbT1zDTXbsnGoNGolKNhT8SaEKnJfMyOP1VGwRx2OP0VsX0vjdNBFX4JpXc%2BSERVfgLOxp6TK8JKVoTURKyqP9sScpbKhEBqJz1YCAhWSDszQK4I6qtgsadqY8%2BuSu%2F0xKPvCQbzGx%2FBbvzBH4TVhMmaYZpMpYdQ3ivVK1IInYmj5ZcSE6LvJNwtEGi6Nf9jBIVvyupTRfK5yLmkVDWwkwh%2FPexwY6pgFodU4mQjiN0yV0Gm84TzxXYH7x09fI2jFCultiKgmbgKSDV7Ic3HWFU4dzi6wSzwvmQWLNr8uy%2FTFtEQmdx9BDHm%2Bycmn6APmXrcpzBP0piwZ0mTGd6uu3rI9hB6AFMPZFCLwUkednM2YxgP%2FM%2BDFSbZHuPByJk%2BnOvG7wFGGXEktk0Vn40gh58pgFpeIgGKUA7FXOVK5JKqBsmurJgxvj1Fc6BYPG&X-Amz-Signature=0bc6a19ebab943860f516d1c75e2a80caf4e92630a46adb2f4c6e49269f55f7b&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject" },
 ];
 
 // ProfilePicture Component
 const ProfilePicture = ({ currentUser, onLogout }) => {
   const [profileImage, setProfileImage] = useState(null);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [previewImage, setPreviewImage] = useState(null);
   const [originalImage, setOriginalImage] = useState(null);
   const fileInputRef = React.useRef(null);
-  const cameraInputRef = React.useRef(null);
   const dropdownRef = React.useRef(null);
 
   useEffect(() => {
@@ -65,11 +65,9 @@ const ProfilePicture = ({ currentUser, onLogout }) => {
     setShowModal(false);
     setPreviewImage(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
-    if (cameraInputRef.current) cameraInputRef.current.value = '';
   };
 
   const triggerGalleryUpload = () => fileInputRef.current?.click();
-  const triggerCameraUpload = () => cameraInputRef.current?.click();
   const handleMouseEnter = () => setShowDropdown(true);
   const handleMouseLeave = () => setShowDropdown(false);
 
@@ -106,7 +104,7 @@ const ProfilePicture = ({ currentUser, onLogout }) => {
             
             <div className="py-1">
               <button
-                onClick={() => setShowDropdown(false)}
+                onClick={() => { setShowDropdown(false); setShowProfile(true); }}
                 className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center"
               >
                 <User className="w-4 h-4 mr-3" />
@@ -155,14 +153,6 @@ const ProfilePicture = ({ currentUser, onLogout }) => {
               </div>
               <div className="space-y-3">
                 <button
-                  onClick={triggerCameraUpload}
-                  className="w-full flex items-center justify-center px-4 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors duration-200"
-                >
-                  <Camera className="w-5 h-5 mr-2" />
-                  Take Photo from Camera
-                </button>
-                
-                <button
                   onClick={triggerGalleryUpload}
                   className="w-full flex items-center justify-center px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
                 >
@@ -190,8 +180,64 @@ const ProfilePicture = ({ currentUser, onLogout }) => {
         </div>
       )}
 
-      <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageSelect} className="hidden" />
-      <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" onChange={handleImageSelect} className="hidden" />
+  <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageSelect} className="hidden" />
+      {/* View Profile Modal */}
+      {/** showProfile will display full profile information similar to the attached screenshot */}
+      {typeof showProfile !== 'undefined' && showProfile && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-60">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
+            <h3 className="text-xl font-bold mb-4">Profile Information</h3>
+            <div className="flex flex-col items-center gap-4">
+              <div className="w-28 h-28 rounded-full overflow-hidden border-4 border-gray-100">
+                {profileImage ? (
+                  <img src={profileImage} alt="Profile" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                    <User className="w-12 h-12 text-gray-400" />
+                  </div>
+                )}
+              </div>
+
+              <div className="w-full space-y-3">
+                <label className="text-xs text-gray-500">Full Name</label>
+                <div className="p-3 bg-gray-50 rounded-md text-gray-700">{currentUser?.displayName || ''}</div>
+
+                <label className="text-xs text-gray-500">Email Address</label>
+                <div className="p-3 bg-gray-50 rounded-md text-gray-700">{currentUser?.email || ''}</div>
+
+                <label className="text-xs text-gray-500">User ID</label>
+                <div className="p-3 bg-gray-50 rounded-md text-gray-700">{currentUser?.uid || ''}</div>
+
+                <label className="text-xs text-gray-500">Role</label>
+                {(() => {
+                  const role = currentUser?.uid ? (localStorage.getItem(`userRole_${currentUser.uid}`) || 'student') : null;
+                  const access = role === 'student' ? 'Basic access' : role ? 'Editor access' : '—';
+                  return (
+                    <>
+                      <div className="p-3 bg-gray-50 rounded-md text-gray-700">{role || '—'}</div>
+                      <label className="text-xs text-gray-500 mt-2">Access Level</label>
+                      <div className="p-3 bg-gray-50 rounded-md text-gray-700">{access}</div>
+                    </>
+                  );
+                })()}
+
+                <label className="text-xs text-gray-500">Account Created</label>
+                <div className="p-3 bg-gray-50 rounded-md text-gray-700">{currentUser?.metadata?.creationTime ? new Date(currentUser.metadata.creationTime).toLocaleDateString() : ''}</div>
+
+                <label className="text-xs text-gray-500">Last Sign In</label>
+                <div className="p-3 bg-gray-50 rounded-md text-gray-700">{currentUser?.metadata?.lastSignInTime ? new Date(currentUser.metadata.lastSignInTime).toLocaleDateString() : ''}</div>
+
+                <label className="text-xs text-gray-500">Email Verified</label>
+                <div className="p-3 bg-gray-50 rounded-md text-gray-700">{currentUser?.emailVerified ? <span className="inline-block px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs">Verified</span> : 'Not Verified'}</div>
+              </div>
+
+              <div className="w-full mt-4 flex justify-end">
+                <button onClick={() => setShowProfile(false)} className="px-6 py-2 bg-teal-600 text-white rounded-lg">Close</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };

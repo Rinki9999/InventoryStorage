@@ -1,12 +1,8 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Warehouse, Settings, LogOut, ChevronDown } from 'lucide-react';
 import { useNavigate, Link, useParams } from 'react-router-dom';
-import { logOut, onAuthChange, db, collection, onSnapshot, sendNotification, addDoc, updateDoc, doc, query, where, getDocs, getDoc, runTransaction } from '../firebase';
+import { logOut, onAuthChange, db, collection, onSnapshot, sendNotification } from '../firebase';
 import NotificationBell from '../components/NotificationBell';
-import LaptopSubmissionForm from '../components/LaptopSubmissionForm';
-import LaptopReturnForm from '../components/LaptopReturnForm';
-import MedicineFormModal from '../components/MedicineFormModal';
-import MedicineUsageModal from '../components/MedicineUsageModal';
 
 
 
@@ -176,12 +172,12 @@ const NavItem = ({ title, icon: Icon, dropdownItems, currentUser, navigate }) =>
 const Navbar = ({ userRole }) => {
   const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState(null);
-  // Use role passed from parent App; default to 'student' when not provided
-  const effectiveRole = userRole || 'student';
+  const [currentUserRole, setCurrentUserRole] = useState('admin');
 
   useEffect(() => {
     const unsubscribe = onAuthChange((user) => {
-      setCurrentUser(user || null);
+      if (user) setCurrentUser(user);
+      else setCurrentUser(null);
     });
 
     return () => unsubscribe();
@@ -203,9 +199,9 @@ const Navbar = ({ userRole }) => {
     },
   ];
 
-  // Filter navigation based on user role and exclude Settings for this page
+  // Filter navigation based on user role
   const navStructure = allNavOptions.filter(navItem => 
-    navItem.allowedRoles.includes(effectiveRole) && navItem.title !== "Settings"
+    navItem.allowedRoles.includes(currentUserRole)
   );
 
   const handleLogout = async () => {
@@ -250,7 +246,7 @@ const Navbar = ({ userRole }) => {
             Hello, {currentUser ? currentUser.displayName || currentUser.email : "Guest"}
           </span>
           <div className="flex items-center space-x-4">
-            <NotificationBell userRole={effectiveRole} />
+            <NotificationBell userRole={currentUserRole} />
             <button
               onClick={handleLogout}
               className="flex items-center bg-red-500 hover:bg-red-600 px-4 py-2 rounded-full text-sm font-semibold"
@@ -259,6 +255,7 @@ const Navbar = ({ userRole }) => {
               Logout
             </button>
           </div>
+          {/* 👇👇👇 ADD THIS BACK BUTTON */}
           <button
             onClick={handleBack}
             className="flex items-center bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-full text-sm font-semibold ml-2"
@@ -266,7 +263,7 @@ const Navbar = ({ userRole }) => {
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
             </svg>
-            Back
+              Back
           </button>
         </div>
       </div>
@@ -625,7 +622,6 @@ const CategoryDistributionChart = ({ assets, filters, onFilterChange }) => {
 
 // --- UrgentAlertsList Component ---
 const UrgentAlertsList = ({ assets, generateRecommendation, isGenerating }) => {
-  const [showAll, setShowAll] = useState(false);
   const urgentItems = assets.filter(a => isAssetUrgent(a.status));
 
   const lowStockAlerts = urgentItems.filter(a => a.status === 'Low Stock');
@@ -650,12 +646,13 @@ const UrgentAlertsList = ({ assets, generateRecommendation, isGenerating }) => {
             <div className="bg-yellow-50 p-4 rounded-xl border border-yellow-300">
               <p className="font-semibold text-gray-800 mb-2">Low Stock ({lowStockAlerts.length} item)</p>
               <ul className="list-disc ml-5 text-sm text-gray-700 space-y-1">
-                {(showAll ? lowStockAlerts : lowStockAlerts.slice(0, 3)).map(item => (
+                {lowStockAlerts.slice(0, 3).map(item => (
                   <li key={item.id} className="break-words">
+                    {/* REMOVED REDUNDANT CUSTOM BULLET SPAN */}
                     {item.name} (Qty: {item.qty})
                   </li>
                 ))}
-                {!showAll && lowStockAlerts.length > 3 && (
+                {lowStockAlerts.length > 3 && (
                   <li className="font-medium text-gray-700">and {lowStockAlerts.length - 3} more items...</li>
                 )}
               </ul>
@@ -666,12 +663,13 @@ const UrgentAlertsList = ({ assets, generateRecommendation, isGenerating }) => {
             <div className="bg-red-50 p-4 rounded-xl border border-red-300">
               <p className="font-semibold text-gray-800 mb-2">Expired/Damaged ({disposalAlerts.length} item)</p>
               <ul className="list-disc ml-5 text-sm text-gray-700 space-y-1">
-                {(showAll ? disposalAlerts : disposalAlerts.slice(0, 3)).map(item => (
+                {disposalAlerts.slice(0, 3).map(item => (
                   <li key={item.id} className="break-words">
+                    {/* REMOVED REDUNDANT CUSTOM BULLET SPAN */}
                     {item.name} ({item.status})
                   </li>
                 ))}
-                {!showAll && disposalAlerts.length > 3 && (
+                {disposalAlerts.length > 3 && (
                   <li className="font-medium text-gray-700">and {disposalAlerts.length - 3} more items...</li>
                 )}
               </ul>
@@ -700,357 +698,10 @@ const UrgentAlertsList = ({ assets, generateRecommendation, isGenerating }) => {
                 )}
               </button>
             )}
-            <button
-              onClick={() => setShowAll(prev => !prev)}
-              className="text-blue-600 text-sm font-medium hover:underline py-2"
-            >
-              {showAll ? 'Show Less' : 'View All Alerts'}
-            </button>
+            <button className="text-blue-600 text-sm font-medium hover:underline py-2">View All Alerts</button>
           </div>
         </div>
       )}
-    </div>
-  );
-};
-
-// --- Request Form Component ---
-const RequestForm = ({ currentUser, userRole }) => {
-  const [form, setForm] = useState({
-    requesterName: currentUser?.displayName || '',
-    requesterEmail: currentUser?.email || '',
-    role: userRole || '',
-    reason: '',
-    itemName: '',
-    isCountable: true,
-    quantity: '',
-    dateRequested: ''
-  });
-
-  const [isSubmitted, setIsSubmitted] = useState(false);
-  const [submittedId, setSubmittedId] = useState(null);
-  const [message, setMessage] = useState('');
-
-  // Load any existing request by this user so form becomes the edit interface
-  useEffect(() => {
-    let unsub;
-    if (currentUser && currentUser.uid) {
-      try {
-        const q = query(collection(db, 'health_requests'), where('requesterUid', '==', currentUser.uid));
-        unsub = onSnapshot(q, (snapshot) => {
-          const docs = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-          if (docs.length > 0) {
-            // Load the most recent request by createdAt if available
-            docs.sort((a, b) => (a.createdAt || '') > (b.createdAt || '') ? -1 : 1);
-            const existing = docs[0];
-            setForm({
-              requesterName: existing.requesterName || currentUser.displayName || '',
-              requesterEmail: existing.requesterEmail || currentUser.email || '',
-              role: existing.role || userRole || '',
-              reason: existing.reason || '',
-              itemName: existing.itemName || '',
-              isCountable: existing.isCountable !== undefined ? existing.isCountable : true,
-              quantity: existing.quantity || '',
-              dateRequested: existing.dateRequested || ''
-            });
-            setIsSubmitted(true);
-            setSubmittedId(existing.id);
-            setMessage('Loaded your previous request. Edit and save changes if needed.');
-          }
-        });
-      } catch (err) {
-        console.error('Error loading existing request', err);
-      }
-    }
-    return () => unsub && unsub();
-  }, [currentUser]);
-
-  const handleChange = (k, v) => setForm(prev => ({ ...prev, [k]: v }));
-
-  const validate = () => {
-    if (!form.requesterName || !form.requesterEmail || !form.reason || !form.itemName || !form.dateRequested) return false;
-    if (form.isCountable && (!form.quantity || isNaN(Number(form.quantity)))) return false;
-    return true;
-  };
-
-  const handleSubmit = async () => {
-    if (!validate()) {
-      setMessage('Please fill required fields correctly.');
-      return;
-    }
-
-    try {
-      const medDoc = await findMedicationByName(form.itemName);
-      if (!medDoc) {
-        setMessage('Item not available (Out of stock).');
-        return;
-      }
-      const medData = medDoc.data();
-      const requestedQty = form.isCountable ? Number(form.quantity) : 0;
-      if (form.isCountable && requestedQty > (medData.qty || 0)) {
-        setMessage('Insufficient stock for the requested quantity.');
-        return;
-      }
-
-      // All checks passed — submit and decrement via helper
-      await handleSubmitWithMed(medDoc);
-    } catch (err) {
-      console.error('Error during submit flow:', err);
-      setMessage('Failed to submit. Try again.');
-    }
-  };
-
-  // Helper: find medication document by name (case-insensitive)
-  const findMedicationByName = async (name) => {
-    if (!name) return null;
-    
-    // First try exact match on name field
-    const medQ1 = query(collection(db, 'medications'), where('name', '==', name.trim()));
-    let medSnap = await getDocs(medQ1);
-    if (!medSnap.empty) return medSnap.docs[0];
-
-    // If exact match fails, get all medications and search case-insensitively
-    const allMedsQ = query(collection(db, 'medications'));
-    const allMedsSnap = await getDocs(allMedsQ);
-    const targetName = name.trim().toLowerCase();
-    
-    for (const medDoc of allMedsSnap.docs) {
-      const medData = medDoc.data();
-      if (medData.name && medData.name.toLowerCase() === targetName) {
-        return medDoc;
-      }
-    }
-    
-    return null;
-  };
-
-  // Auto-check and submit on blur of item name
-  const checkAndAutoSubmit = async () => {
-    if (submittedId) return; // already submitted
-    
-    console.log('Checking medication:', form.itemName); // Debug log
-    const medDoc = await findMedicationByName(form.itemName);
-    console.log('Found medication doc:', medDoc ? medDoc.data() : 'Not found'); // Debug log
-    
-    if (!medDoc) {
-      setMessage(`Medicine "${form.itemName}" not found in inventory.`);
-      return;
-    }
-    const medData = medDoc.data();
-    const currentStock = medData.qty || 0;
-    
-    if (form.isCountable) {
-      if (!form.quantity) {
-        setMessage(`${form.itemName} is available (${currentStock} in stock). Please enter quantity.`);
-        return;
-      }
-      const requestedQty = Number(form.quantity);
-      if (requestedQty > currentStock) {
-        setMessage(`Insufficient stock: Only ${currentStock} ${form.itemName} available, but you requested ${requestedQty}.`);
-        return;
-      }
-    }
-
-    setMessage(`${form.itemName} is available (${currentStock} in stock). Ready to submit.`);
-  };
-
-  // New handleSubmit that accepts medDoc to avoid double-query
-  const handleSubmitWithMed = async (medDoc) => {
-    if (!validate()) {
-      setMessage('Please fill required fields correctly.');
-      return;
-    }
-
-    const payload = {
-      requesterName: form.requesterName,
-      requesterEmail: form.requesterEmail,
-      requesterUid: currentUser?.uid || null,
-      role: form.role,
-      reason: form.reason,
-      itemName: form.itemName,
-      isCountable: !!form.isCountable,
-      quantity: form.isCountable ? Number(form.quantity) : null,
-      dateRequested: form.dateRequested,
-      status: 'pending',
-      createdAt: new Date().toISOString()
-    };
-
-    try {
-      const ref = await addDoc(collection(db, 'health_requests'), payload);
-      // decrement medication qty if countable
-      if (form.isCountable && medDoc) {
-        // Use transaction to decrement quantity safely
-        const medRef = doc(db, 'medications', medDoc.id);
-        await runTransaction(db, async (transaction) => {
-          const medSnapshot = await transaction.get(medRef);
-          const currentQty = (medSnapshot.data()?.qty) || 0;
-          const newQty = currentQty - Number(form.quantity);
-          if (newQty < 0) throw new Error('Insufficient stock during transaction');
-          transaction.update(medRef, { qty: newQty });
-        });
-      }
-      setIsSubmitted(true);
-      setSubmittedId(ref.id);
-      setMessage('Request submitted. You can edit it if needed.');
-
-      // Create an initial notification linked to this request (so we can update it later)
-      try {
-        const notificationData = {
-          title: `Health Request: ${payload.itemName}`,
-          message: `${payload.requesterName} requested ${payload.itemName}${payload.isCountable && payload.quantity ? ` x${payload.quantity}` : ''} - Reason: ${payload.reason}`,
-          type: 'health_request',
-          read: false,
-          createdAt: new Date().toISOString(),
-          recipientRoles: ['health_council', 'admin'],
-          category: 'Health',
-          requestId: ref.id
-        };
-        await addDoc(collection(db, 'notifications'), notificationData);
-      } catch (err) {
-        console.warn('Notification creation failed', err);
-      }
-    } catch (error) {
-      console.error('Error submitting request:', error);
-      setMessage('Failed to submit. Try again.');
-    }
-  };
-
-  const handleUpdate = async () => {
-    if (!submittedId) return;
-    try {
-  // Read existing request to compute quantity delta
-  const reqRef = doc(db, 'health_requests', submittedId);
-  const reqSnap = await getDoc(reqRef);
-  const existingReq = reqSnap.exists() ? reqSnap.data() : null;
-
-      const updateData = {
-        requesterName: form.requesterName,
-        requesterEmail: form.requesterEmail,
-        reason: form.reason,
-        itemName: form.itemName,
-        isCountable: !!form.isCountable,
-        quantity: form.isCountable ? Number(form.quantity) : null,
-        dateRequested: form.dateRequested,
-        updatedAt: new Date().toISOString()
-      };
-
-      // Check availability before updating if quantity is being increased
-      if (updateData.isCountable && updateData.quantity) {
-        const medDoc = await findMedicationByName(updateData.itemName);
-        if (medDoc) {
-          const medData = medDoc.data();
-          const currentStock = medData.qty || 0;
-          const oldQty = existingReq ? (existingReq.quantity || 0) : 0;
-          const newQtyRequested = updateData.quantity;
-          const delta = newQtyRequested - oldQty; // positive means requesting more
-          
-          // If user is requesting more medicine than before, check if enough stock available
-          if (delta > 0 && currentStock < delta) {
-            setMessage(`Cannot update: Only ${currentStock} ${updateData.itemName} available. You need ${delta} more to increase from ${oldQty} to ${newQtyRequested}.`);
-            return;
-          }
-        } else {
-          setMessage(`Medicine "${updateData.itemName}" not found in inventory.`);
-          return;
-        }
-      }
-
-      await updateDoc(doc(db, 'health_requests', submittedId), updateData);
-      // Adjust medication stock if quantity changed and item is countable
-      try {
-        const medDoc = await findMedicationByName(updateData.itemName);
-        if (medDoc && updateData.isCountable) {
-          const medData = medDoc.data();
-          const oldQty = existingReq ? (existingReq.quantity || 0) : 0;
-          const newQtyRequested = updateData.quantity || 0;
-          const delta = newQtyRequested - oldQty; // positive => user requested more (decrement med), negative => user reduced request (increment med)
-          const medRef = doc(db, 'medications', medDoc.id);
-          await runTransaction(db, async (transaction) => {
-            const medSnapshot = await transaction.get(medRef);
-            const currentQty = (medSnapshot.data()?.qty) || 0;
-            const newQty = currentQty - delta;
-            transaction.update(medRef, { qty: newQty });
-          });
-        }
-      } catch (err) {
-        console.warn('Failed adjusting medication stock after update', err);
-      }
-      setMessage('Submission updated.');
-
-      // Update related notification(s) instead of creating a new one
-      try {
-        const q = query(collection(db, 'notifications'), where('requestId', '==', submittedId));
-        const snap = await getDocs(q);
-        for (const nd of snap.docs) {
-          const nRef = doc(db, 'notifications', nd.id);
-          const newNotification = {
-            title: `Health Request Updated: ${updateData.itemName}`,
-            message: `${updateData.requesterName} updated request for ${updateData.itemName}${updateData.isCountable && updateData.quantity ? ` x${updateData.quantity}` : ''} - Reason: ${updateData.reason}`,
-            updatedAt: new Date().toISOString(),
-            read: false
-          };
-          await updateDoc(nRef, newNotification);
-        }
-      } catch (err) {
-        console.warn('Failed updating linked notifications', err);
-      }
-    } catch (error) {
-      console.error('Error updating request:', error);
-      setMessage('Failed to update.');
-    }
-  };
-
-  const handleNewRequest = () => {
-    // Clear form and reset submission state to allow new request
-    setForm({
-      requesterName: currentUser?.displayName || '',
-      requesterEmail: currentUser?.email || '',
-      role: userRole || '',
-      reason: '',
-      itemName: '',
-      isCountable: true,
-      quantity: '',
-      dateRequested: ''
-    });
-    setIsSubmitted(false);
-    setSubmittedId(null);
-    setMessage('Form cleared. You can now submit a new request.');
-  };
-
-  return (
-    <div className="bg-white p-6 rounded-xl shadow-xl border border-gray-100 mt-6">
-      <h4 className="text-xl font-bold text-gray-800 mb-4"> Medicine  Form</h4>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <input value={form.requesterName} onChange={e => handleChange('requesterName', e.target.value)} placeholder="Requester Name" className="border p-3 rounded-lg" />
-        <input value={form.requesterEmail} onChange={e => handleChange('requesterEmail', e.target.value)} placeholder="Email" className="border p-3 rounded-lg" />
-        <input value={form.reason} onChange={e => handleChange('reason', e.target.value)} placeholder="Reason for request" className="border p-3 rounded-lg col-span-1 sm:col-span-2" />
-  <input value={form.itemName} onChange={e => handleChange('itemName', e.target.value)} onBlur={checkAndAutoSubmit} placeholder="Item / Medicine Name" className="border p-3 rounded-lg" />
-
-        <div className="flex items-center gap-3">
-          <label className="flex items-center gap-2"><input type="radio" checked={form.isCountable} onChange={() => handleChange('isCountable', true)} /> Countable</label>
-          <label className="flex items-center gap-2"><input type="radio" checked={!form.isCountable} onChange={() => handleChange('isCountable', false)} /> Non-countable</label>
-        </div>
-
-        {form.isCountable ? (
-          <input value={form.quantity} onChange={e => handleChange('quantity', e.target.value)} type="number" placeholder="Quantity (e.g., 1, 2)" className="border p-3 rounded-lg" />
-        ) : (
-          <div className="text-sm text-gray-600 p-3">Non-countable items: just provide the name above (no quantity required)</div>
-        )}
-
-        <input value={form.dateRequested} onChange={e => handleChange('dateRequested', e.target.value)} type="date" className="border p-3 rounded-lg" />
-      </div>
-
-      <div className="flex items-center gap-3 mt-4">
-        {submittedId ? (
-          <>
-            <button onClick={handleUpdate} className="bg-green-600 text-white px-4 py-2 rounded-lg">Save Changes</button>
-            <button onClick={handleNewRequest} className="bg-gray-600 text-white px-4 py-2 rounded-lg">New Request</button>
-          </>
-        ) : (
-          <button onClick={handleSubmit} className="bg-blue-600 text-white px-4 py-2 rounded-lg">Submit Request</button>
-        )}
-        <div className="text-sm text-gray-600">{message}</div>
-      </div>
     </div>
   );
 };
@@ -1076,12 +727,6 @@ export default function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [recommendation, setRecommendation] = useState({ assetName: '', text: '', status: '' });
   const [isGenerating, setIsGenerating] = useState(false);
-  const [showRequestForm, setShowRequestForm] = useState(false);
-  const [showLaptopForm, setShowLaptopForm] = useState(false);
-  const [showReturnForm, setShowReturnForm] = useState(false);
-  const [showMedicineModal, setShowMedicineModal] = useState(false);
-  const [showUsageModal, setShowUsageModal] = useState(false);
-  const [medicineUsage, setMedicineUsage] = useState([]);
 
   // Get current user and their role
   useEffect(() => {
@@ -1224,29 +869,6 @@ export default function App() {
     return () => {
       unsubscribeFunctions.forEach(unsubscribe => unsubscribe());
     };
-  }, []);
-
-  // Load medicine usage data from Firebase
-  useEffect(() => {
-    const unsubscribe = onSnapshot(collection(db, 'medicineUsage'), (snapshot) => {
-      const usageData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      
-      // Sort by timestamp, newest first
-      usageData.sort((a, b) => {
-        const timeA = a.timestamp?.toDate() || new Date(0);
-        const timeB = b.timestamp?.toDate() || new Date(0);
-        return timeB - timeA;
-      });
-      
-      setMedicineUsage(usageData);
-    }, (error) => {
-      console.error("Error loading medicine usage:", error);
-    });
-
-    return () => unsubscribe();
   }, []);
 
   // Filter Handler
@@ -1448,55 +1070,7 @@ export default function App() {
                   />
                 </div>
 
-                <div className="flex items-center justify-end gap-4 mb-4">
-                  <button onClick={() => setShowMedicineModal(true)} className="bg-teal-600 text-white px-4 py-2 rounded-lg hover:bg-teal-700">Medicin form</button>
-                  <button onClick={() => setShowUsageModal(true)} className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">Medicine Usage Instructions</button>
-                  <button onClick={() => setShowLaptopForm(true)} className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">Submit Laptop</button>
-                  <button onClick={() => setShowReturnForm(true)} className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700">Return Laptop</button>
-                </div>
-
-                {/* 3. Request Form (Health / Item requests) - collapsible */}
-                {showRequestForm && <RequestForm currentUser={currentUser} userRole={userRole} />}
-
-                {/* Laptop Submission Form Modal */}
-                {showLaptopForm && (
-                  <LaptopSubmissionForm 
-                    onClose={() => setShowLaptopForm(false)}
-                    onSubmit={(formData) => {
-                      console.log('Laptop submitted:', formData);
-                      // Additional handling if needed
-                    }}
-                  />
-                )}
-
-                {/* Laptop Return Form Modal */}
-                {showReturnForm && (
-                  <LaptopReturnForm 
-                    onClose={() => setShowReturnForm(false)}
-                    onReturn={(formData) => {
-                      console.log('Laptop returned:', formData);
-                      // Additional handling if needed
-                    }}
-                  />
-                )}
-
-                {/* Medicine Form Modal */}
-                {showMedicineModal && (
-                  <MedicineFormModal 
-                    onClose={() => setShowMedicineModal(false)}
-                    currentUser={currentUser}
-                    userRole={userRole}
-                  />
-                )}
-
-                {/* Medicine Usage Instructions Modal */}
-                {showUsageModal && (
-                  <MedicineUsageModal 
-                    onClose={() => setShowUsageModal(false)}
-                  />
-                )}
-
-                {/* 4. Assets Table (Pass filteredAssets) */}
+                {/* 3. Assets Table (Pass filteredAssets) */}
                 <div className="w-full">
                   <AssetsTable assets={filteredAssets} />
                 </div>
