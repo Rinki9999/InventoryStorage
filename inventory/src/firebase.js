@@ -12,7 +12,7 @@ import {
   signInWithEmailAndPassword,
 } from "firebase/auth";
 
-import { getFirestore, collection, addDoc, getDocs, getDoc, updateDoc, deleteDoc, doc, onSnapshot, query, where, orderBy, serverTimestamp, runTransaction } from "firebase/firestore";
+import { getFirestore, collection, addDoc, getDocs, getDoc, updateDoc, deleteDoc, doc, onSnapshot, query, where, orderBy, serverTimestamp, runTransaction, setDoc } from "firebase/firestore";
 import { getAnalytics } from "firebase/analytics";
 
 // Your Firebase config
@@ -109,6 +109,7 @@ export {
   updateDoc, 
   deleteDoc, 
   doc, 
+  setDoc,
   onSnapshot, 
   query, 
   where, 

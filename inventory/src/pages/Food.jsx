@@ -2,7 +2,8 @@ import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { useNavigate } from "react-router-dom";
 import { db } from '../firebase';
 import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, serverTimestamp } from 'firebase/firestore';
-import NotificationBell from '../components/NotificationBell';
+import FoodRequestForm from '../components/FoodRequestForm';
+
 
 
 // Load Tone.js from CDN (Assuming this is available in the environment)
@@ -270,6 +271,9 @@ export default function App() {
     const [alarmItems, setAlarmItems] = useState([]);
     const [isAlarmDismissed, setIsAlarmDismissed] = useState(false);
     const isInitialLoadRef = useRef(true);
+
+    // --- FOOD REQUEST FORM STATE ---
+    const [showFoodRequestForm, setShowFoodRequestForm] = useState(false);
 
     // --- NAVIGATION STATE ---
     const [currentPage, setCurrentPage] = useState('DASHBOARD');
@@ -731,9 +735,7 @@ export default function App() {
                             <h1 className="text-4xl font-extrabold text-gray-800 text-center">📊 Food Asset Management Dashboard</h1>
                             <p className="text-gray-500 mt-2 text-center">15-Day Stock Management and Waste Prevention</p>
                         </div>
-                        <div className="absolute right-0 top-0">
-                            <NotificationBell userRole="admin" />
-                        </div>
+
                     </div>
                     {/* Centered Alarm Button and Checked Date */}
                     
@@ -764,6 +766,16 @@ export default function App() {
                                 Add to List
                             </button>
                         </form>
+                        
+                        {/* Food Request Button */}
+                        <div className="mt-4 flex justify-center">
+                            <button
+                                onClick={() => setShowFoodRequestForm(true)}
+                                className="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-xl transition duration-150 shadow-md flex items-center gap-2"
+                            >
+                                🍽️ Request Food Item
+                            </button>
+                        </div>
                     </section>
 
                     {/* Controls Section: Filters, Search, Sort */}
@@ -935,6 +947,15 @@ export default function App() {
 
             {/* Conditional Content Rendering */}
             {renderContent()}
+            
+            {/* Food Request Form Modal */}
+            {showFoodRequestForm && (
+                <FoodRequestForm
+                    onClose={() => setShowFoodRequestForm(false)}
+                    currentUser={{ uid: 'current-user-id', displayName: 'Current User', email: 'user@example.com' }}
+                    userRole="student"
+                />
+            )}
         </div>
     );
 }

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { db, collection, addDoc, query, where, onSnapshot, updateDoc, doc, getDocs } from '../firebase';
 
-const MedicineFormModal = ({ onClose, currentUser, userRole }) => {
+const FoodRequestForm = ({ onClose, currentUser, userRole }) => {
   const [form, setForm] = useState({
     requesterName: currentUser?.displayName || '',
     requesterEmail: currentUser?.email || '',
@@ -17,90 +17,19 @@ const MedicineFormModal = ({ onClose, currentUser, userRole }) => {
   const [submittedId, setSubmittedId] = useState(null);
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [availableMedicines, setAvailableMedicines] = useState([]);
-  const [medicineValidation, setMedicineValidation] = useState({ isValid: true, message: '' });
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const [filteredSuggestions, setFilteredSuggestions] = useState([]);
-
-  // Load available medicines from database
-  useEffect(() => {
-    const loadMedicines = async () => {
-      try {
-        const snapshot = await getDocs(collection(db, 'medications'));
-        const medicines = snapshot.docs.map(doc => ({ 
-          id: doc.id, 
-          ...doc.data(),
-          displayName: doc.data().name || doc.data().medicationName || doc.data().itemName || doc.data().medicine || 'Unknown Medicine'
-        }));
-        setAvailableMedicines(medicines);
-      } catch (error) {
-        console.error('Error loading medicines:', error);
-      }
-    };
-    loadMedicines();
-  }, []);
-
-  // Filter suggestions as user types
-  useEffect(() => {
-    if (form.itemName.trim()) {
-      const suggestions = availableMedicines.filter(med => {
-        const medName = med.name || med.medicationName || med.itemName || med.medicine || '';
-        return medName && medName.toLowerCase().includes(form.itemName.toLowerCase().trim());
-      }).slice(0, 5); // Limit to 5 suggestions
-      
-      setFilteredSuggestions(suggestions);
-      setShowSuggestions(suggestions.length > 0 && form.itemName.trim().length > 1);
-    } else {
-      setFilteredSuggestions([]);
-      setShowSuggestions(false);
-    }
-  }, [form.itemName, availableMedicines]);
-
-  // Validate medicine name as user types
-  useEffect(() => {
-    if (form.itemName.trim()) {
-      const medicine = availableMedicines.find(med => {
-        const medName = med.name || med.medicationName || med.itemName || med.medicine || '';
-        return medName && medName.toLowerCase().trim() === form.itemName.toLowerCase().trim();
-      });
-
-      if (medicine) {
-        const availableStock = parseInt(medicine.quantity) || parseInt(medicine.stock) || parseInt(medicine.count) || parseInt(medicine.qty) || 0;
-        if (availableStock > 0) {
-          setMedicineValidation({ 
-            isValid: true, 
-            message: `✓ Medicine available (Stock: ${availableStock} units)` 
-          });
-          setShowSuggestions(false); // Hide suggestions when valid medicine is selected
-        } else {
-          setMedicineValidation({ 
-            isValid: false, 
-            message: `⚠️ Medicine found but out of stock` 
-          });
-        }
-      } else {
-        setMedicineValidation({ 
-          isValid: false, 
-          message: 'Medicine not found. Please select from suggestions below.' 
-        });
-      }
-    } else {
-      setMedicineValidation({ isValid: true, message: '' });
-    }
-  }, [form.itemName, availableMedicines]);
 
   // Load any existing request by this user
   useEffect(() => {
     let unsub;
     if (currentUser && currentUser.uid) {
       // If user cancelled previously in this session, don't auto-load existing request
-      const clearedKey = `medicineForm_cleared_${currentUser.uid}`;
+      const clearedKey = `foodForm_cleared_${currentUser.uid}`;
       const wasCleared = sessionStorage.getItem(clearedKey);
       if (wasCleared) {
         return;
       }
       try {
-        const q = query(collection(db, 'health_requests'), where('requesterUid', '==', currentUser.uid));
+        const q = query(collection(db, 'food_requests'), where('requesterUid', '==', currentUser.uid));
         unsub = onSnapshot(q, (snapshot) => {
           const docs = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
           if (docs.length > 0) {
@@ -136,52 +65,46 @@ const MedicineFormModal = ({ onClose, currentUser, userRole }) => {
     return true;
   };
 
-  const findMedicationByName = async (name) => {
+  const findFoodItemByName = async (name) => {
     try {
-      // Get all medications and do case-insensitive search
-      const snapshot = await getDocs(collection(db, 'medications'));
-      const medications = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      // Get all food items and do case-insensitive search
+      const snapshot = await getDocs(collection(db, 'foodItems'));
+      const foodItems = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       
-      // Search for medicine with case-insensitive matching - try multiple field names
-      const foundMedication = medications.find(med => {
+      // Search for food item with case-insensitive matching - try multiple field names
+      const foundItem = foodItems.find(item => {
         // Check multiple possible name fields
-        const medName = med.name || med.medicationName || med.itemName || med.medicine || '';
-        return medName && medName.toLowerCase().trim() === name.toLowerCase().trim();
+        const itemName = item.name || item.itemName || item.foodName || item.item || '';
+        return itemName && itemName.toLowerCase().trim() === name.toLowerCase().trim();
       });
       
-      return foundMedication || null;
+      return foundItem || null;
     } catch (error) {
-      console.error('Error finding medication:', error);
+      console.error('Error finding food item:', error);
       return null;
     }
   };
 
-    const handleSubmit = async () => {
+  const handleSubmit = async () => {
     if (!validate()) {
       setMessage('Please fill required fields correctly.');
-      return;
-    }
-
-    // Check medicine validation
-    if (!medicineValidation.isValid) {
-      setMessage('Please select a valid medicine from the available medications.');
       return;
     }
 
     // Check stock availability if it's a countable item
     if (form.isCountable && form.quantity) {
       const requestedQty = parseInt(form.quantity);
-      const medication = await findMedicationByName(form.itemName);
+      const foodItem = await findFoodItemByName(form.itemName);
       
-      if (medication) {
+      if (foodItem) {
         // Check multiple possible stock field names
-        const availableStock = parseInt(medication.quantity) || parseInt(medication.stock) || parseInt(medication.count) || parseInt(medication.qty) || 0;
+        const availableStock = parseInt(foodItem.quantity) || parseInt(foodItem.stock) || parseInt(foodItem.count) || parseInt(foodItem.qty) || 0;
         if (requestedQty > availableStock) {
           setMessage(`Only ${availableStock} units available in stock. You cannot request more than the available quantity.`);
           return;
         }
       } else {
-        setMessage('Medicine not found in medication database.');
+        setMessage('Food item not found in inventory database.');
         return;
       }
     }
@@ -198,42 +121,42 @@ const MedicineFormModal = ({ onClose, currentUser, userRole }) => {
 
       if (isSubmitted && submittedId) {
         // Update existing request
-        await updateDoc(doc(db, 'health_requests', submittedId), requestData);
+        await updateDoc(doc(db, 'food_requests', submittedId), requestData);
         setMessage('Request updated successfully!');
         // clear the "cancelled in session" marker so next open will load this request
         if (currentUser && currentUser.uid) {
-          const clearedKey = `medicineForm_cleared_${currentUser.uid}`;
+          const clearedKey = `foodForm_cleared_${currentUser.uid}`;
           sessionStorage.removeItem(clearedKey);
         }
       } else {
         // Create new request and deduct stock
-        const docRef = await addDoc(collection(db, 'health_requests'), requestData);
+        const docRef = await addDoc(collection(db, 'food_requests'), requestData);
         
-        // Deduct stock from medication dashboard if it's countable
+        // Deduct stock from food inventory if it's countable
         if (form.isCountable && form.quantity) {
-          const medication = await findMedicationByName(form.itemName);
-          if (medication) {
-            const currentStock = parseInt(medication.quantity) || parseInt(medication.stock) || parseInt(medication.count) || parseInt(medication.qty) || 0;
+          const foodItem = await findFoodItemByName(form.itemName);
+          if (foodItem) {
+            const currentStock = parseInt(foodItem.quantity) || parseInt(foodItem.stock) || parseInt(foodItem.count) || parseInt(foodItem.qty) || 0;
             const newQuantity = currentStock - parseInt(form.quantity);
             
             // Update the correct field (preserve the original field name)
             const updatedData = {
-              ...medication,
-              status: newQuantity <= 0 ? 'out of stock' : medication.status || 'available'
+              ...foodItem,
+              status: newQuantity <= 0 ? 'out of stock' : foodItem.status || 'available'
             };
             
             // Update the field that exists in the original document
-            if (medication.quantity !== undefined) {
+            if (foodItem.quantity !== undefined) {
               updatedData.quantity = Math.max(0, newQuantity);
-            } else if (medication.stock !== undefined) {
+            } else if (foodItem.stock !== undefined) {
               updatedData.stock = Math.max(0, newQuantity);
-            } else if (medication.count !== undefined) {
+            } else if (foodItem.count !== undefined) {
               updatedData.count = Math.max(0, newQuantity);
-            } else if (medication.qty !== undefined) {
+            } else if (foodItem.qty !== undefined) {
               updatedData.qty = Math.max(0, newQuantity);
             }
             
-            await updateDoc(doc(db, 'medications', medication.id), updatedData);
+            await updateDoc(doc(db, 'foodItems', foodItem.id), updatedData);
           }
         }
         
@@ -241,7 +164,7 @@ const MedicineFormModal = ({ onClose, currentUser, userRole }) => {
         setIsSubmitted(true);
         setMessage('Request submitted successfully! Stock updated.');
         if (currentUser && currentUser.uid) {
-          const clearedKey = `medicineForm_cleared_${currentUser.uid}`;
+          const clearedKey = `foodForm_cleared_${currentUser.uid}`;
           sessionStorage.removeItem(clearedKey);
         }
       }
@@ -261,18 +184,18 @@ const MedicineFormModal = ({ onClose, currentUser, userRole }) => {
   const handleCancel = () => {
     // Mark that user cancelled so reopening modal in this session shows fresh form
     if (currentUser && currentUser.uid) {
-      const clearedKey = `medicineForm_cleared_${currentUser.uid}`;
+      const clearedKey = `foodForm_cleared_${currentUser.uid}`;
       sessionStorage.setItem(clearedKey, '1');
     }
     onClose();
   };
 
   return (
-    <div className="medicine-form-modal">
+    <div className="food-form-modal">
       <div className="modal-overlay" onClick={onClose}></div>
       <div className="modal-content">
         <div className="modal-header">
-          <h2>Medicine Request Form</h2>
+          <h2>Food Item Request Form</h2>
           <button className="close-btn" onClick={handleCancel}>&times;</button>
         </div>
         
@@ -307,84 +230,15 @@ const MedicineFormModal = ({ onClose, currentUser, userRole }) => {
             </div>
           </div>
 
-          <div className="form-group" style={{ position: 'relative' }}>
-            <label>Medicine/Item Name *</label>
+          <div className="form-group">
+            <label>Food Item Name *</label>
             <input
               type="text"
               value={form.itemName}
               onChange={(e) => handleChange('itemName', e.target.value)}
-              placeholder="Enter medicine or item name"
+              placeholder="Enter food item name (e.g., Rice, Flour)"
               required
-              style={{
-                borderColor: form.itemName.trim() && !medicineValidation.isValid ? '#ef4444' : '#d1d5db'
-              }}
-              onFocus={() => setShowSuggestions(filteredSuggestions.length > 0)}
             />
-            
-            {/* Suggestions Dropdown */}
-            {showSuggestions && (
-              <div style={{
-                position: 'absolute',
-                top: '100%',
-                left: '0',
-                right: '0',
-                backgroundColor: 'white',
-                border: '1px solid #d1d5db',
-                borderRadius: '4px',
-                maxHeight: '200px',
-                overflowY: 'auto',
-                zIndex: 1000,
-                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-              }}>
-                {filteredSuggestions.map((medicine, index) => {
-                  const medName = medicine.name || medicine.medicationName || medicine.itemName || medicine.medicine || '';
-                  const stock = parseInt(medicine.quantity) || parseInt(medicine.stock) || parseInt(medicine.count) || parseInt(medicine.qty) || 0;
-                  return (
-                    <div
-                      key={medicine.id || index}
-                      onClick={() => {
-                        handleChange('itemName', medName);
-                        setShowSuggestions(false);
-                      }}
-                      style={{
-                        padding: '10px',
-                        borderBottom: '1px solid #f3f4f6',
-                        cursor: 'pointer',
-                        backgroundColor: 'white',
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center'
-                      }}
-                      onMouseEnter={(e) => e.target.style.backgroundColor = '#f9fafb'}
-                      onMouseLeave={(e) => e.target.style.backgroundColor = 'white'}
-                    >
-                      <span>{medName}</span>
-                      <span style={{
-                        fontSize: '12px',
-                        color: stock > 0 ? '#059669' : '#dc2626',
-                        fontWeight: 'bold'
-                      }}>
-                        Stock: {stock}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-            
-            {medicineValidation.message && (
-              <div style={{
-                marginTop: '5px',
-                padding: '8px',
-                fontSize: '14px',
-                borderRadius: '4px',
-                backgroundColor: medicineValidation.isValid ? '#dcfce7' : '#fef2f2',
-                color: medicineValidation.isValid ? '#166534' : '#dc2626',
-                border: `1px solid ${medicineValidation.isValid ? '#bbf7d0' : '#fecaca'}`
-              }}>
-                {medicineValidation.message}
-              </div>
-            )}
           </div>
 
           <div className="form-row">
@@ -442,7 +296,7 @@ const MedicineFormModal = ({ onClose, currentUser, userRole }) => {
             <textarea
               value={form.reason}
               onChange={(e) => handleChange('reason', e.target.value)}
-              placeholder="Explain why you need this medicine/item"
+              placeholder="Explain why you need this food item"
               rows="3"
               required
             />
@@ -465,7 +319,7 @@ const MedicineFormModal = ({ onClose, currentUser, userRole }) => {
       </div>
 
       <style jsx>{`
-        .medicine-form-modal {
+        .food-form-modal {
           position: fixed;
           top: 0;
           left: 0;
@@ -670,4 +524,4 @@ const MedicineFormModal = ({ onClose, currentUser, userRole }) => {
   );
 };
 
-export default MedicineFormModal;
+export default FoodRequestForm;

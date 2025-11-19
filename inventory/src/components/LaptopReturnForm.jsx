@@ -19,7 +19,7 @@ const LaptopReturnForm = ({ onClose, onReturn }) => {
     const loadAvailableLaptops = async () => {
       setIsLoadingLaptops(true);
       try {
-        const q = query(collection(db, "laptopSubmissions"), where("status", "==", "pending"));
+        const q = query(collection(db, "laptopSubmissions"), where("status", "==", "approved"));
         const querySnapshot = await getDocs(q);
         const laptops = [];
         querySnapshot.forEach((doc) => {
@@ -52,7 +52,7 @@ const LaptopReturnForm = ({ onClose, onReturn }) => {
       const q = query(
         collection(db, "laptopSubmissions"), 
         where("laptopNumber", "==", formData.laptopNumber),
-        where("status", "==", "pending")
+        where("status", "==", "approved")
       );
       const querySnapshot = await getDocs(q);
 

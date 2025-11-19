@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { db, collection, addDoc } from "../firebase";
 
-const LaptopSubmissionForm = ({ onClose, onSubmit }) => {
+const LaptopSubmissionForm = ({ onClose, onSubmit, currentUser }) => {
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
+    name: currentUser?.displayName || '',
+    email: currentUser?.email || '',
     laptopNumber: '',
     submissionDate: new Date().toISOString().split('T')[0],
     chargerNumber: ''
@@ -28,6 +28,7 @@ const LaptopSubmissionForm = ({ onClose, onSubmit }) => {
       // Add to Firestore collection
       const docRef = await addDoc(collection(db, "laptopSubmissions"), {
         ...formData,
+        uid: currentUser?.uid || null,
         timestamp: new Date(),
         status: 'pending'
       });
@@ -41,8 +42,8 @@ const LaptopSubmissionForm = ({ onClose, onSubmit }) => {
 
       // Reset form
       setFormData({
-        name: '',
-        email: '',
+        name: currentUser?.displayName || '',
+        email: currentUser?.email || '',
         laptopNumber: '',
         submissionDate: new Date().toISOString().split('T')[0],
         chargerNumber: ''

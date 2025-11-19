@@ -9,6 +9,18 @@ import {
   signInWithEmail,
 } from "../firebase";
 
+import { 
+  db, 
+  collection, 
+  addDoc, 
+  doc, 
+  setDoc, 
+  getDoc, 
+  getDocs, 
+  query, 
+  where 
+} from "../firebase";
+
 export default function Login() {
   const navigate = useNavigate(); // ✅ initialize navigate
 
@@ -21,6 +33,52 @@ export default function Login() {
   const [user, setUser] = useState(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Helper function to save user data to Firestore
+  const saveUserToFirestore = async (user, userRole, displayName = null) => {
+    try {
+      console.log('Saving user to Firestore...', user.uid, userRole);
+      
+      // Save to users collection
+      await setDoc(doc(db, 'users', user.uid), {
+        email: user.email,
+        displayName: displayName || user.displayName || `${firstName} ${lastName}`.trim() || user.email,
+        photoURL: user.photoURL || null,
+        createdAt: new Date().toISOString(),
+        lastLogin: new Date().toISOString()
+      }, { merge: true });
+      
+      console.log('User saved to users collection');
+
+      // Save to userRoles collection
+      const roleQuery = query(collection(db, 'userRoles'), where('uid', '==', user.uid));
+      const roleSnapshot = await getDocs(roleQuery);
+      
+      if (roleSnapshot.empty) {
+        await addDoc(collection(db, 'userRoles'), {
+          uid: user.uid,
+          role: userRole,
+          createdAt: new Date().toISOString()
+        });
+        console.log('User role created:', userRole);
+      } else {
+        console.log('User role already exists');
+      }
+
+      // Save to activeLogins collection
+      await addDoc(collection(db, 'activeLogins'), {
+        uid: user.uid,
+        loginTime: new Date().toISOString(),
+        lastActive: new Date().toISOString(),
+        userAgent: navigator.userAgent
+      });
+      
+      console.log('Active login session created');
+      console.log('User data saved to Firestore successfully');
+    } catch (error) {
+      console.error('Error saving user to Firestore:', error);
+    }
+  };
 
   useEffect(() => {
     const unsub = onAuthChange((u) => setUser(u));
@@ -43,11 +101,15 @@ export default function Login() {
       
       // Check if user role is already saved
       const existingRole = localStorage.getItem(`userRole_${user.uid}`);
-      if (!existingRole) {
-        // If no role exists, save the selected role (default to 'Student')
-        localStorage.setItem(`userRole_${user.uid}`, role);
-        console.log("Google user signed in with role:", role);
-      }
+      const finalRole = existingRole || role;
+      
+      // Save to localStorage
+      localStorage.setItem(`userRole_${user.uid}`, finalRole);
+      
+      // Save to Firestore
+      await saveUserToFirestore(user, finalRole);
+      
+      console.log("Google user signed in with role:", finalRole);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -66,10 +128,22 @@ export default function Login() {
         // Save user role to localStorage for immediate access
         localStorage.setItem(`userRole_${user.uid}`, role);
         
-        // You can also store firstName, lastName, role in Firestore here if needed
+        // Save to Firestore with full name
+        const displayName = `${firstName} ${lastName}`.trim() || user.email;
+        await saveUserToFirestore(user, role, displayName);
+        
         console.log("User signed up with role:", role);
       } else {
-        await signInWithEmail(email, password);
+        const userCredential = await signInWithEmail(email, password);
+        const user = userCredential.user;
+        
+        // Get existing role or default to student
+        const existingRole = localStorage.getItem(`userRole_${user.uid}`) || 'student';
+        
+        // Save to Firestore (will merge with existing data)
+        await saveUserToFirestore(user, existingRole);
+        
+        console.log("User signed in");
       }
     } catch (err) {
       setError(err.message);
