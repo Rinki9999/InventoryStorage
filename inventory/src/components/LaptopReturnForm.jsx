@@ -118,7 +118,7 @@ const LaptopReturnForm = ({ onClose, onReturn }) => {
       <div className="modal-overlay" onClick={onClose}></div>
       <div className="modal-content">
         <div className="modal-header">
-          <h2>Laptop Return Form</h2>
+          <h2>Laptop Take Form</h2>
           <button className="close-btn" onClick={onClose}>&times;</button>
         </div>
         
