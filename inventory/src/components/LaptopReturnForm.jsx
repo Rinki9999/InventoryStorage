@@ -19,7 +19,7 @@ const LaptopReturnForm = ({ onClose, onReturn }) => {
     const loadAvailableLaptops = async () => {
       setIsLoadingLaptops(true);
       try {
-        const q = query(collection(db, "laptopSubmissions"), where("status", "==", "pending"));
+        const q = query(collection(db, "laptopSubmissions"), where("status", "==", "approved"));
         const querySnapshot = await getDocs(q);
         const laptops = [];
         querySnapshot.forEach((doc) => {
@@ -52,7 +52,7 @@ const LaptopReturnForm = ({ onClose, onReturn }) => {
       const q = query(
         collection(db, "laptopSubmissions"), 
         where("laptopNumber", "==", formData.laptopNumber),
-        where("status", "==", "pending")
+        where("status", "==", "approved")
       );
       const querySnapshot = await getDocs(q);
 
@@ -62,7 +62,7 @@ const LaptopReturnForm = ({ onClose, onReturn }) => {
         return;
       }
 
-      // Add to laptop returns collection
+      // Add to laptop receives collection
       await addDoc(collection(db, "laptopReturns"), {
         ...formData,
         timestamp: new Date(),
@@ -74,7 +74,7 @@ const LaptopReturnForm = ({ onClose, onReturn }) => {
         await deleteDoc(doc(db, "laptopSubmissions", docSnapshot.id));
       });
 
-      console.log("Laptop returned successfully");
+      console.log("Laptop received successfully");
       
       // Call parent callback if provided
       if (onReturn) {
@@ -90,13 +90,13 @@ const LaptopReturnForm = ({ onClose, onReturn }) => {
         chargerNumber: ''
       });
 
-      alert('Laptop return successful! IT team has been notified.');
+      alert('Laptop receive successful! IT team has been notified.');
       
       if (onClose) {
         onClose();
       }
     } catch (error) {
-      console.error("Error processing laptop return: ", error);
+      console.error("Error processing laptop receive: ", error);
       alert('Error processing return. Please try again.');
     }
 
@@ -118,14 +118,14 @@ const LaptopReturnForm = ({ onClose, onReturn }) => {
       <div className="modal-overlay" onClick={onClose}></div>
       <div className="modal-content">
         <div className="modal-header">
-          <h2>Laptop Return Form</h2>
+          <h2>Laptop Receive Form</h2>
           <button className="close-btn" onClick={onClose}>&times;</button>
         </div>
         
         {/* Available Laptops Section */}
         {availableLaptops.length > 0 && (
           <div className="available-laptops-section">
-            <h3>Available Laptops for Return</h3>
+            <h3>Available Laptops for Receiving</h3>
             {isLoadingLaptops ? (
               <div>Loading available laptops...</div>
             ) : (
@@ -219,7 +219,7 @@ const LaptopReturnForm = ({ onClose, onReturn }) => {
               Cancel
             </button>
             <button type="submit" className="return-btn" disabled={isSubmitting}>
-              {isSubmitting ? 'Processing Return...' : 'Return Laptop'}
+              {isSubmitting ? 'Processing Receive...' : 'Receive Laptop'}
             </button>
           </div>
         </form>

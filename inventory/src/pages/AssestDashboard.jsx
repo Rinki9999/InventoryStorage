@@ -2,13 +2,53 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Warehouse, Settings, LogOut, ChevronDown } from 'lucide-react';
 import { useNavigate, Link, useParams } from 'react-router-dom';
 import { logOut, onAuthChange, db, collection, onSnapshot, sendNotification, addDoc, updateDoc, doc, query, where, getDocs, getDoc, runTransaction } from '../firebase';
-import NotificationBell from '../components/NotificationBell';
+
 import LaptopSubmissionForm from '../components/LaptopSubmissionForm';
 import LaptopReturnForm from '../components/LaptopReturnForm';
 import MedicineFormModal from '../components/MedicineFormModal';
 import MedicineUsageModal from '../components/MedicineUsageModal';
+import ActiveUsersAdmin from '../components/ActiveUsersAdmin';
 
-
+// --- Notification Sound System ---
+const playNotificationSound = (type = 'success') => {
+  try {
+    // Create audio context for web audio API
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    
+    // Different sounds for different notification types
+    const soundFrequencies = {
+      success: [800, 600, 400], // Success sound (descending)
+      error: [300, 300, 300], // Error sound (same tone)
+      info: [500, 700, 500] // Info sound (up-down)
+    };
+    
+    const frequencies = soundFrequencies[type] || soundFrequencies.success;
+    let delay = 0;
+    
+    frequencies.forEach((freq, index) => {
+      setTimeout(() => {
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        oscillator.frequency.setValueAtTime(freq, audioContext.currentTime);
+        oscillator.type = 'sine';
+        
+        gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+        gainNode.gain.linearRampToValueAtTime(0.3, audioContext.currentTime + 0.1);
+        gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + 0.3);
+        
+        oscillator.start(audioContext.currentTime);
+        oscillator.stop(audioContext.currentTime + 0.3);
+      }, delay);
+      delay += 200;
+    });
+  } catch (error) {
+    console.log('Audio not supported:', error);
+  }
+};
 
 // --- Initial Data and Constants ---
 
@@ -25,6 +65,18 @@ const initialAssets = [
   { id: 10, name: 'HDMI Cable', category: 'IT', qty: 1, expiry: '-', status: 'Low Stock', assigned: '-', value: 10 },
   { id: 11, name: 'Expired Medication', category: 'Health', qty: 4, expiry: '2024-05-01', status: 'Expired', assigned: 'Storage', value: 50 },
   { id: 12, name: 'Broken Desk Lamp', category: 'Furniture', qty: 1, expiry: '-', status: 'Damaged', assigned: 'Storage', value: 75 },
+  
+  // Office Supplies Items
+  { id: 13, name: 'A4 Paper', category: 'Office Supplies', qty: 50, expiry: '-', status: 'In Stock', assigned: 'Office', value: 20 },
+  { id: 14, name: 'Blue Pens', category: 'Office Supplies', qty: 3, expiry: '-', status: 'Low Stock', assigned: 'Reception', value: 10 },
+  { id: 15, name: 'Staplers', category: 'Office Supplies', qty: 8, expiry: '-', status: 'In Stock', assigned: 'Various', value: 15 },
+  { id: 16, name: 'Paper Clips', category: 'Office Supplies', qty: 2, expiry: '-', status: 'Low Stock', assigned: 'Office', value: 5 },
+  { id: 17, name: 'Folders', category: 'Office Supplies', qty: 15, expiry: '-', status: 'In Stock', assigned: 'Archive', value: 25 },
+  { id: 18, name: 'Whiteboard Markers', category: 'Office Supplies', qty: 1, expiry: '-', status: 'Low Stock', assigned: 'Meeting Rooms', value: 12 },
+  { id: 19, name: 'Printer Cartridges', category: 'Office Supplies', qty: 0, expiry: '-', status: 'Out of Stock', assigned: '-', value: 80 },
+  { id: 20, name: 'Notebooks', category: 'Office Supplies', qty: 25, expiry: '-', status: 'In Stock', assigned: 'Supply Room', value: 35 },
+  { id: 21, name: 'Highlighters', category: 'Office Supplies', qty: 4, expiry: '-', status: 'Low Stock', assigned: 'Office', value: 8 },
+  { id: 22, name: 'Desk Organizers', category: 'Office Supplies', qty: 6, expiry: '-', status: 'In Stock', assigned: 'Workstations', value: 30 },
 ];
 
 const CATEGORIES = ['IT', 'Food', 'Health', 'Office Supplies', 'Furniture'];
@@ -124,13 +176,19 @@ const NavItem = ({ title, icon: Icon, dropdownItems, currentUser, navigate }) =>
   const handleNavClick = (itemTitle) => {
     setIsOpen(false);
     if (itemTitle === "Health and Hygiene") {
-      navigate("/helth"); // ✅ Navigate to Helth page
+      navigate("/health"); // ✅ Navigate to Health page
     }
     if (itemTitle === "IT Equipment") {
       navigate("/itdashboard"); // ✅ Navigate to ITDashboard page
     }
     if (itemTitle === "Food Inventory") {
       navigate("/food");
+    }
+    if (itemTitle === "Office Supplies") {
+      navigate("/office-supplies");
+    }
+    if (itemTitle === "User Management") {
+      setShowActiveUsers(true); // ✅ Open ActiveUsersAdmin modal
     }
 
     // future dropdowns add here
@@ -182,30 +240,78 @@ const Navbar = ({ userRole }) => {
   useEffect(() => {
     const unsubscribe = onAuthChange((user) => {
       setCurrentUser(user || null);
+      
+      // Request notification permission when user logs in
+      if (user && Notification.permission === 'default') {
+        Notification.requestPermission();
+      }
     });
 
     return () => unsubscribe();
   }, []);
+
+  // Listen for new notifications and play sound
+  useEffect(() => {
+    if (!currentUser?.uid) return;
+
+    const notificationsRef = collection(db, 'userNotifications');
+    const userNotificationsQuery = query(
+      notificationsRef, 
+      where('recipientUid', '==', currentUser.uid),
+      where('read', '==', false)
+    );
+
+    let isFirstLoad = true;
+    const unsubscribe = onSnapshot(userNotificationsQuery, (snapshot) => {
+      if (isFirstLoad) {
+        isFirstLoad = false;
+        return; // Skip playing sound on initial load
+      }
+
+      // Play sound for new notifications
+      snapshot.docChanges().forEach((change) => {
+        if (change.type === 'added') {
+          const notification = change.doc.data();
+          console.log('New notification received:', notification);
+          
+          // Play appropriate sound based on notification type
+          playNotificationSound(notification.type || 'info');
+          
+          // Show browser notification if permission granted
+          if (Notification.permission === 'granted') {
+            new Notification(notification.title, {
+              body: notification.message,
+              icon: '/favicon.ico'
+            });
+          }
+        }
+      });
+    });
+
+    return () => unsubscribe();
+  }, [currentUser]);
 
   // Define all navigation options
   const allNavOptions = [
     {
       title: "Assets",
       icon: Warehouse,
-      dropdownItems: ["IT Equipment", "Food Inventory", "Health and Hygiene"],
+      dropdownItems: ["IT Equipment", "Food Inventory", "Health and Hygiene", "Office Supplies"],
       allowedRoles: ["admin", "council"] // Only Admin and Council can access Assets
     },
     {
       title: "Settings",
       icon: Settings,
-      dropdownItems: ["System Settings", "User Management", "Change Password"],
-      allowedRoles: ["admin", "council", "student"] // All roles can access Settings
+      dropdownItems: effectiveRole === "admin" 
+        ? ["User Management"]
+        : [],
+      allowedRoles: ["admin"] // Only Admin can access Settings
     },
   ];
 
-  // Filter navigation based on user role and exclude Settings for this page
+  // Filter navigation based on user role
   const navStructure = allNavOptions.filter(navItem => 
-    navItem.allowedRoles.includes(effectiveRole) && navItem.title !== "Settings"
+    navItem.allowedRoles.includes(effectiveRole)
   );
 
   const handleLogout = async () => {
@@ -246,22 +352,9 @@ const Navbar = ({ userRole }) => {
         </div>
 
         <div className="flex items-center space-x-6">
-          <span className="hidden lg:inline text-sm font-medium opacity-90">
-            Hello, {currentUser ? currentUser.displayName || currentUser.email : "Guest"}
-          </span>
-          <div className="flex items-center space-x-4">
-            <NotificationBell userRole={effectiveRole} />
-            <button
-              onClick={handleLogout}
-              className="flex items-center bg-red-500 hover:bg-red-600 px-4 py-2 rounded-full text-sm font-semibold"
-            >
-              <LogOut className="w-4 h-4 mr-1" />
-              Logout
-            </button>
-          </div>
           <button
             onClick={handleBack}
-            className="flex items-center bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-full text-sm font-semibold ml-2"
+            className="flex items-center bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-full text-sm font-semibold"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
@@ -624,14 +717,12 @@ const CategoryDistributionChart = ({ assets, filters, onFilterChange }) => {
 };
 
 // --- UrgentAlertsList Component ---
-const UrgentAlertsList = ({ assets, generateRecommendation, isGenerating }) => {
+const UrgentAlertsList = ({ assets }) => {
   const [showAll, setShowAll] = useState(false);
   const urgentItems = assets.filter(a => isAssetUrgent(a.status));
 
   const lowStockAlerts = urgentItems.filter(a => a.status === 'Low Stock');
   const disposalAlerts = urgentItems.filter(a => a.status === 'Expired' || a.status === 'Damaged');
-
-  const assetToAnalyze = disposalAlerts.length > 0 ? disposalAlerts[0] : null;
 
   return (
     <div className="bg-white p-5 rounded-xl shadow-xl border border-gray-100 w-full">
@@ -679,27 +770,6 @@ const UrgentAlertsList = ({ assets, generateRecommendation, isGenerating }) => {
           )}
 
           <div className="text-right pt-4 flex flex-col sm:flex-row justify-end items-end gap-2">
-            {assetToAnalyze && (
-              <button
-                onClick={() => generateRecommendation(assetToAnalyze)}
-                disabled={isGenerating}
-                className={`text-sm font-bold py-2 px-3 rounded-lg transition-colors duration-200 shadow-md flex items-center justify-center ${isGenerating ? 'bg-gray-400 text-gray-700 cursor-not-allowed' : 'bg-blue-500 text-white hover:bg-blue-600'}`}
-              >
-                {isGenerating ? (
-                  <>
-                    <svg className="animate-spin h-5 w-5 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Generating...
-                  </>
-                ) : (
-                  <>
-                    Generate Disposal Plan ✨
-                  </>
-                )}
-              </button>
-            )}
             <button
               onClick={() => setShowAll(prev => !prev)}
               className="text-blue-600 text-sm font-medium hover:underline py-2"
@@ -1075,13 +1145,13 @@ export default function App() {
   // State for Gemini Feature
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [recommendation, setRecommendation] = useState({ assetName: '', text: '', status: '' });
-  const [isGenerating, setIsGenerating] = useState(false);
   const [showRequestForm, setShowRequestForm] = useState(false);
   const [showLaptopForm, setShowLaptopForm] = useState(false);
   const [showReturnForm, setShowReturnForm] = useState(false);
   const [showMedicineModal, setShowMedicineModal] = useState(false);
   const [showUsageModal, setShowUsageModal] = useState(false);
   const [medicineUsage, setMedicineUsage] = useState([]);
+  const [showActiveUsers, setShowActiveUsers] = useState(false);
 
   // Get current user and their role
   useEffect(() => {
@@ -1118,7 +1188,7 @@ export default function App() {
   // Load data from Firebase - combine all collections
   useEffect(() => {
     const unsubscribeFunctions = [];
-    let allAssets = [];
+    let allAssets = [...initialAssets]; // Start with initialAssets
     let completedCollections = 0;
     const totalCollections = 3;
 
@@ -1285,54 +1355,7 @@ export default function App() {
   );
 
 
-  // Gemini API Function
-  const generateAssetRecommendation = async (asset) => {
-    setIsGenerating(true);
-    setRecommendation({ assetName: asset.name, text: '', status: asset.status });
-    setIsModalOpen(true);
 
-    // Updated prompt to request English response
-    const userQuery = `You are an Inventory Management Assistant. For the asset named: ${asset.name} in the category: ${asset.category} which has a status of: ${asset.status} and quantity: ${asset.qty}, generate a concise, two-paragraph recommendation. The first paragraph should summarize the issue and the second paragraph should suggest the next steps, such as 'Scrap and Replace', 'Repair Quote', or 'Immediate Disposal', along with a brief reason. Respond only with the recommendation text in English (simple and professional tone).`;
-
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${API_MODEL}:generateContent?key=${API_KEY}`;
-
-    const payload = {
-      contents: [{ parts: [{ text: userQuery }] }],
-      systemInstruction: {
-        parts: [{ text: "Act as a professional inventory manager." }]
-      },
-    };
-
-    try {
-      const response = await retryFetch(() =>
-        fetch(apiUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        })
-      );
-
-      const result = await response.json();
-      const generatedText = result.candidates?.[0]?.content?.parts?.[0]?.text ||
-        "Sorry, the recommendation could not be generated. Server error.";
-
-      setRecommendation({
-        assetName: asset.name,
-        text: generatedText,
-        status: asset.status
-      });
-
-    } catch (error) {
-      console.error("Gemini API call failed:", error);
-      setRecommendation({
-        assetName: asset.name,
-        text: "The recommendation could not be generated due to a network error. Please check your internet connection.",
-        status: asset.status
-      });
-    } finally {
-      setIsGenerating(false);
-    }
-  };
 
 
   // Calculate dynamic dashboard stats based on FILTERED assets
@@ -1443,16 +1466,18 @@ export default function App() {
                   />
                   <UrgentAlertsList
                     assets={filteredAssets}
-                    generateRecommendation={generateAssetRecommendation}
-                    isGenerating={isGenerating}
                   />
                 </div>
 
-                <div className="flex items-center justify-end gap-4 mb-4">
-                  <button onClick={() => setShowMedicineModal(true)} className="bg-teal-600 text-white px-4 py-2 rounded-lg hover:bg-teal-700">Medicin form</button>
-                  <button onClick={() => setShowUsageModal(true)} className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">Medicine Usage Instructions</button>
-                  <button onClick={() => setShowLaptopForm(true)} className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">Submit Laptop</button>
-                  <button onClick={() => setShowReturnForm(true)} className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700">Return Laptop</button>
+                {/* Action Buttons Container */}
+                <div className="bg-white rounded-lg shadow-md border border-gray-200 p-6 mb-6">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4">Quick Actions</h3>
+                  <div className="flex flex-wrap items-center justify-center gap-4">
+                    <button onClick={() => setShowMedicineModal(true)} className="bg-teal-600 text-white px-6 py-3 rounded-lg hover:bg-teal-700 font-medium shadow-md hover:shadow-lg transition-all duration-200">Medicine form</button>
+                    <button onClick={() => setShowUsageModal(true)} className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 font-medium shadow-md hover:shadow-lg transition-all duration-200">Medicine Usage Instructions</button>
+                    <button onClick={() => setShowLaptopForm(true)} className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 font-medium shadow-md hover:shadow-lg transition-all duration-200">Submit Laptop</button>
+                    <button onClick={() => setShowReturnForm(true)} className="bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 font-medium shadow-md hover:shadow-lg transition-all duration-200">Return Laptop</button>
+                  </div>
                 </div>
 
                 {/* 3. Request Form (Health / Item requests) - collapsible */}
@@ -1462,6 +1487,7 @@ export default function App() {
                 {showLaptopForm && (
                   <LaptopSubmissionForm 
                     onClose={() => setShowLaptopForm(false)}
+                    currentUser={currentUser}
                     onSubmit={(formData) => {
                       console.log('Laptop submitted:', formData);
                       // Additional handling if needed
@@ -1496,6 +1522,14 @@ export default function App() {
                   />
                 )}
 
+                {/* Active Users Admin Modal */}
+                {showActiveUsers && userRole === 'admin' && (
+                  <ActiveUsersAdmin 
+                    onClose={() => setShowActiveUsers(false)}
+                    currentUser={currentUser}
+                  />
+                )}
+
                 {/* 4. Assets Table (Pass filteredAssets) */}
                 <div className="w-full">
                   <AssetsTable assets={filteredAssets} />
@@ -1506,7 +1540,6 @@ export default function App() {
                   isOpen={isModalOpen}
                   onClose={() => setIsModalOpen(false)}
                   recommendation={recommendation}
-                  isLoading={isGenerating}
                 />
 
               </div>

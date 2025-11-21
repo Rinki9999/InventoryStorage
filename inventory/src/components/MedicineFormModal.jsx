@@ -17,6 +17,77 @@ const MedicineFormModal = ({ onClose, currentUser, userRole }) => {
   const [submittedId, setSubmittedId] = useState(null);
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [availableMedicines, setAvailableMedicines] = useState([]);
+  const [medicineValidation, setMedicineValidation] = useState({ isValid: true, message: '' });
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [filteredSuggestions, setFilteredSuggestions] = useState([]);
+
+  // Load available medicines from database
+  useEffect(() => {
+    const loadMedicines = async () => {
+      try {
+        const snapshot = await getDocs(collection(db, 'medications'));
+        const medicines = snapshot.docs.map(doc => ({ 
+          id: doc.id, 
+          ...doc.data(),
+          displayName: doc.data().name || doc.data().medicationName || doc.data().itemName || doc.data().medicine || 'Unknown Medicine'
+        }));
+        setAvailableMedicines(medicines);
+      } catch (error) {
+        console.error('Error loading medicines:', error);
+      }
+    };
+    loadMedicines();
+  }, []);
+
+  // Filter suggestions as user types
+  useEffect(() => {
+    if (form.itemName.trim()) {
+      const suggestions = availableMedicines.filter(med => {
+        const medName = med.name || med.medicationName || med.itemName || med.medicine || '';
+        return medName && medName.toLowerCase().includes(form.itemName.toLowerCase().trim());
+      }).slice(0, 5); // Limit to 5 suggestions
+      
+      setFilteredSuggestions(suggestions);
+      setShowSuggestions(suggestions.length > 0 && form.itemName.trim().length > 1);
+    } else {
+      setFilteredSuggestions([]);
+      setShowSuggestions(false);
+    }
+  }, [form.itemName, availableMedicines]);
+
+  // Validate medicine name as user types
+  useEffect(() => {
+    if (form.itemName.trim()) {
+      const medicine = availableMedicines.find(med => {
+        const medName = med.name || med.medicationName || med.itemName || med.medicine || '';
+        return medName && medName.toLowerCase().trim() === form.itemName.toLowerCase().trim();
+      });
+
+      if (medicine) {
+        const availableStock = parseInt(medicine.quantity) || parseInt(medicine.stock) || parseInt(medicine.count) || parseInt(medicine.qty) || 0;
+        if (availableStock > 0) {
+          setMedicineValidation({ 
+            isValid: true, 
+            message: `✓ Medicine available (Stock: ${availableStock} units)` 
+          });
+          setShowSuggestions(false); // Hide suggestions when valid medicine is selected
+        } else {
+          setMedicineValidation({ 
+            isValid: false, 
+            message: `⚠️ Medicine found but out of stock` 
+          });
+        }
+      } else {
+        setMedicineValidation({ 
+          isValid: false, 
+          message: 'Medicine not found. Please select from suggestions below.' 
+        });
+      }
+    } else {
+      setMedicineValidation({ isValid: true, message: '' });
+    }
+  }, [form.itemName, availableMedicines]);
 
   // Load any existing request by this user
   useEffect(() => {
@@ -88,6 +159,12 @@ const MedicineFormModal = ({ onClose, currentUser, userRole }) => {
     const handleSubmit = async () => {
     if (!validate()) {
       setMessage('Please fill required fields correctly.');
+      return;
+    }
+
+    // Check medicine validation
+    if (!medicineValidation.isValid) {
+      setMessage('Please select a valid medicine from the available medicine.');
       return;
     }
 
@@ -230,7 +307,7 @@ const MedicineFormModal = ({ onClose, currentUser, userRole }) => {
             </div>
           </div>
 
-          <div className="form-group">
+          <div className="form-group" style={{ position: 'relative' }}>
             <label>Medicine/Item Name *</label>
             <input
               type="text"
@@ -238,7 +315,76 @@ const MedicineFormModal = ({ onClose, currentUser, userRole }) => {
               onChange={(e) => handleChange('itemName', e.target.value)}
               placeholder="Enter medicine or item name"
               required
+              style={{
+                borderColor: form.itemName.trim() && !medicineValidation.isValid ? '#ef4444' : '#d1d5db'
+              }}
+              onFocus={() => setShowSuggestions(filteredSuggestions.length > 0)}
             />
+            
+            {/* Suggestions Dropdown */}
+            {showSuggestions && (
+              <div style={{
+                position: 'absolute',
+                top: '100%',
+                left: '0',
+                right: '0',
+                backgroundColor: 'white',
+                border: '1px solid #d1d5db',
+                borderRadius: '4px',
+                maxHeight: '200px',
+                overflowY: 'auto',
+                zIndex: 1000,
+                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+              }}>
+                {filteredSuggestions.map((medicine, index) => {
+                  const medName = medicine.name || medicine.medicationName || medicine.itemName || medicine.medicine || '';
+                  const stock = parseInt(medicine.quantity) || parseInt(medicine.stock) || parseInt(medicine.count) || parseInt(medicine.qty) || 0;
+                  return (
+                    <div
+                      key={medicine.id || index}
+                      onClick={() => {
+                        handleChange('itemName', medName);
+                        setShowSuggestions(false);
+                      }}
+                      style={{
+                        padding: '10px',
+                        borderBottom: '1px solid #f3f4f6',
+                        cursor: 'pointer',
+                        backgroundColor: 'white',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center'
+                      }}
+                      onMouseEnter={(e) => e.target.style.backgroundColor = '#f9fafb'}
+                      onMouseLeave={(e) => e.target.style.backgroundColor = 'white'}
+                    >
+                      <span>{medName}</span>
+                      <span style={{
+                        fontSize: '12px',
+                        color: stock > 0 ? '#059669' : '#dc2626',
+                        fontWeight: 'bold'
+                      }}>
+                        Stock: {stock}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            
+            {medicineValidation.message && (
+              <div style={{
+                marginTop: '5px',
+                padding: '8px',
+                fontSize: '14px',
+                borderRadius: '4px',
+                backgroundColor: medicineValidation.isValid ? '#dcfce7' : '#fef2f2',
+                color: medicineValidation.isValid ? '#166534' : '#dc2626',
+                border: `1px solid ${medicineValidation.isValid ? '#bbf7d0' : '#fecaca'}`
+              }}>
+                {medicineValidation.message}
+              </div>
+            )}
           </div>
 
           <div className="form-row">

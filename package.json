@@ -17,5 +17,9 @@
   "bugs": {
     "url": "https://github.com/Rinki9999/InventoryStorage/issues"
   },
-  "homepage": "https://github.com/Rinki9999/InventoryStorage#readme"
+  "homepage": "https://github.com/Rinki9999/InventoryStorage#readme",
+  "dependencies": {
+    "@emailjs/browser": "^4.4.1",
+    "prop-types": "^15.8.1"
+  }
 }

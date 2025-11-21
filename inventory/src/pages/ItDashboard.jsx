@@ -391,6 +391,66 @@ export default function ITDashboard() {
           }
       }
   };
+
+  // Handle laptop submission approval
+  const handleApproveSubmission = async (submissionId, submission) => {
+    try {
+      // Update submission status to approved
+      await updateDoc(doc(db, 'laptopSubmissions', submissionId), {
+        status: 'approved',
+        approvedAt: new Date().toISOString(),
+        approvedBy: 'IT Admin'
+      });
+
+      // Send notification to specific user who submitted the laptop
+      await addDoc(collection(db, 'userNotifications'), {
+        title: 'Laptop Submission Approved',
+        message: `Your laptop submission (${submission.laptopNumber}) has been approved successfully. Your laptop is now submitted.`,
+        type: 'success',
+        read: false,
+        createdAt: new Date().toISOString(),
+        recipientUid: submission.uid || '',
+        recipientEmail: submission.email,
+        recipientName: submission.name,
+        fromSystem: 'IT Department'
+      });
+
+      showToast('Submission approved successfully!', 'success');
+    } catch (error) {
+      console.error('Error approving submission:', error);
+      showToast('Error approving submission. Please try again.', 'error');
+    }
+  };
+
+  // Handle laptop submission disapproval
+  const handleDisapproveSubmission = async (submissionId, submission) => {
+    try {
+      // Update submission status to disapproved
+      await updateDoc(doc(db, 'laptopSubmissions', submissionId), {
+        status: 'disapproved',
+        disapprovedAt: new Date().toISOString(),
+        disapprovedBy: 'IT Admin'
+      });
+
+      // Send notification to specific user who submitted the laptop  
+      await addDoc(collection(db, 'userNotifications'), {
+        title: 'Laptop Submission Disapproved',
+        message: `Your laptop submission (${submission.laptopNumber}) has been disapproved. Please contact IT department for more information.`,
+        type: 'error',
+        read: false,
+        createdAt: new Date().toISOString(),
+        recipientUid: submission.uid || '',
+        recipientEmail: submission.email,
+        recipientName: submission.name,
+        fromSystem: 'IT Department'
+      });
+
+      showToast('Submission disapproved.', 'info');
+    } catch (error) {
+      console.error('Error disapproving submission:', error);
+      showToast('Error disapproving submission. Please try again.', 'error');
+    }
+  };
   
   if (loading) {
     return <div className="flex justify-center items-center min-h-screen">Loading...</div>;
@@ -575,7 +635,7 @@ export default function ITDashboard() {
                     )}
                   </div>
                   
-                  <div className="mt-2 flex gap-2">
+                  <div className="mt-3 flex gap-2 items-center justify-between">
                     <span className={`px-2 py-1 rounded text-xs font-medium ${
                       submission.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 
                       submission.status === 'approved' ? 'bg-green-100 text-green-800' :
@@ -583,6 +643,24 @@ export default function ITDashboard() {
                     }`}>
                       {submission.status?.toUpperCase() || 'PENDING'}
                     </span>
+                    
+                    {/* Show action buttons only for pending submissions */}
+                    {(!submission.status || submission.status === 'pending') && (
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleApproveSubmission(submission.id, submission)}
+                          className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-xs font-medium rounded transition-colors"
+                        >
+                          ✓ Approve
+                        </button>
+                        <button
+                          onClick={() => handleDisapproveSubmission(submission.id, submission)}
+                          className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-xs font-medium rounded transition-colors"
+                        >
+                          ✗ Disapprove
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
@@ -718,7 +796,11 @@ export default function ITDashboard() {
                   })}{visibleLaptops.length === 0 && (
                     <tr><td colSpan={8} className="p-6 text-center text-gray-500 bg-slate-50 border-b border-slate-200">No items match your current search and filter criteria.</td></tr> 
                   )}</tbody>
-              </table>
+              </table>push kao if (condition) {
+                
+              } else {
+                
+              }
             </div>
             
             {/* PIE CHART and Legend */}
