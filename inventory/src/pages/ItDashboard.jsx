@@ -796,7 +796,11 @@ export default function ITDashboard() {
                   })}{visibleLaptops.length === 0 && (
                     <tr><td colSpan={8} className="p-6 text-center text-gray-500 bg-slate-50 border-b border-slate-200">No items match your current search and filter criteria.</td></tr> 
                   )}</tbody>
-              </table>
+              </table>push kao if (condition) {
+                
+              } else {
+                
+              }
             </div>
             
             {/* PIE CHART and Legend */}

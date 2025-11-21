@@ -1476,7 +1476,7 @@ export default function App() {
                     <button onClick={() => setShowMedicineModal(true)} className="bg-teal-600 text-white px-6 py-3 rounded-lg hover:bg-teal-700 font-medium shadow-md hover:shadow-lg transition-all duration-200">Medicine form</button>
                     <button onClick={() => setShowUsageModal(true)} className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 font-medium shadow-md hover:shadow-lg transition-all duration-200">Medicine Usage Instructions</button>
                     <button onClick={() => setShowLaptopForm(true)} className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 font-medium shadow-md hover:shadow-lg transition-all duration-200">Submit Laptop</button>
-                    <button onClick={() => setShowReturnForm(true)} className="bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 font-medium shadow-md hover:shadow-lg transition-all duration-200">Return Laptop</button>
+                    <button onClick={() => setShowReturnForm(true)} className="bg-gray-600 text-white px-6 py-3 rounded-lg hover:bg-gray-700 font-medium shadow-md hover:shadow-lg transition-all duration-200">Receive Laptop</button>
                   </div>
                 </div>
 

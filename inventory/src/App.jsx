@@ -4,8 +4,8 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-d
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import { onAuthChange } from "./firebase";
-import CampusAssetsPage from "./pages/AssestDashboard";
-import Helth from "./pages/Helth";
+import CampusAssetsPage from "./pages/AssetDashboard";
+import Health from "./pages/Health";
 import ITDashboard from "./pages/ItDashboard";
 import Food from "./pages/Food";
 import OfficeSupplies from "./pages/OfficeSupplies";
@@ -36,7 +36,7 @@ const App = () => {
         <Route path="/" element={!user ? <Login /> : <Navigate to="/dashboard" />} />
         <Route path="/dashboard" element={user ? <Dashboard /> : <Navigate to="/" />} />
         <Route path="/campus/:campusName/assets" element={user ? <CampusAssetsPage /> : <Navigate to="/" />} />
-        <Route path="/helth" element={user ? <Helth /> : <Navigate to="/" />} />
+        <Route path="/health" element={user ? <Health /> : <Navigate to="/" />} />
         <Route path="/itdashboard" element={user ? <ITDashboard /> : <Navigate to="/" />} />
         <Route path="/food" element={user ? <Food /> : <Navigate to="/" />} />
         <Route path="/office-supplies" element={user ? <OfficeSupplies /> : <Navigate to="/" />} />

@@ -164,7 +164,7 @@ const MedicineFormModal = ({ onClose, currentUser, userRole }) => {
 
     // Check medicine validation
     if (!medicineValidation.isValid) {
-      setMessage('Please select a valid medicine from the available medications.');
+      setMessage('Please select a valid medicine from the available medicine.');
       return;
     }
 

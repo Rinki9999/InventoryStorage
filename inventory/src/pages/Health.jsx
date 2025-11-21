@@ -371,13 +371,13 @@ const handleBack = () => {
 
       <div className="max-w-7xl mx-auto">
         <header className="mb-8">
-            <h1 className="text-4xl font-bold text-gray-800">Medication Dashboard</h1>
+            <h1 className="text-4xl font-bold text-gray-800">Medicine Dashboard</h1>
             <p className="text-gray-500 mt-1">Manage your medical supplies efficiently.</p>
         </header>
 
       {/* Summary Boxes */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <SummaryBox title="All Medications" value={totalMedications} color="text-blue-500"/>
+        <SummaryBox title="All Medicine7" value={totalMedications} color="text-blue-500"/>
         <SummaryBox title="In Stock" value={inStock} color="text-green-500"/>
         <SummaryBox title="Low Stock" value={lowStock} color="text-yellow-500"/>
         <SummaryBox title="Out of Stock" value={outOfStock} color="text-red-500"/>
@@ -416,7 +416,7 @@ const handleBack = () => {
       {/* Add/Edit Medication Form */}
       {editingMed ? (
         <div className="mb-8 bg-white p-6 rounded-xl shadow-lg flex flex-col sm:flex-row gap-4 items-center">
-            <h3 className="font-semibold text-lg sm:mr-4">Edit Medication</h3>
+            <h3 className="font-semibold text-lg sm:mr-4">Edit Medicine</h3>
             <input className="border border-gray-300 p-3 rounded-lg flex-1 focus:outline-none focus:ring-2 focus:ring-green-400" value={editingMed.name} onChange={e => setEditingMed({ ...editingMed, name: e.target.value })}/>
             <input className="border border-gray-300 p-3 rounded-lg w-full sm:w-28 focus:outline-none focus:ring-2 focus:ring-green-400" type="number" value={editingMed.qty} onChange={e => setEditingMed({ ...editingMed, qty: e.target.value })}/>
             <input className="border border-gray-300 p-3 rounded-lg w-full sm:w-40 focus:outline-none focus:ring-2 focus:ring-green-400" type="date" value={editingMed.expiry} onChange={e => setEditingMed({ ...editingMed, expiry: e.target.value })}/>
@@ -427,7 +427,7 @@ const handleBack = () => {
         </div>
       ) : (
         <div className="mb-8 bg-white p-6 rounded-xl shadow-lg flex flex-col sm:flex-row gap-4 items-center">
-            <h3 className="font-semibold text-lg sm:mr-4">Add New Medication</h3>
+            <h3 className="font-semibold text-lg sm:mr-4">Add New Medicine</h3>
             <input className="border border-gray-300 p-3 rounded-lg flex-1 focus:outline-none focus:ring-2 focus:ring-blue-400" placeholder="Medication Name" value={newMed.name} onChange={e => setNewMed({...newMed, name: e.target.value})} />
             <input className="border border-gray-300 p-3 rounded-lg w-full sm:w-24 focus:outline-none focus:ring-2 focus:ring-blue-400" type="number" placeholder="Qty" value={newMed.qty} onChange={e => setNewMed({...newMed, qty: e.target.value})} />
             <input className="border border-gray-300 p-3 rounded-lg w-full sm:w-40 focus:outline-none focus:ring-2 focus:ring-blue-400" type="date" value={newMed.expiry} onChange={e => setNewMed({...newMed, expiry: e.target.value})} />
@@ -489,7 +489,7 @@ const handleBack = () => {
         <table className="w-full text-left text-sm text-gray-700">
           <thead className="bg-gray-50 uppercase text-gray-600 text-xs">
             <tr>
-              <th className="px-6 py-4">Medication Name</th>
+              <th className="px-6 py-4">Medicine Name</th>
               <th className="px-6 py-4">Quantity</th>
               <th className="px-6 py-4">Expiry Date</th>
               <th className="px-6 py-4">Status</th>
