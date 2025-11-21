@@ -383,69 +383,57 @@ const handleBack = () => {
         <SummaryBox title="Out of Stock" value={outOfStock} color="text-red-500"/>
       </div>
 
-      {/* Procurement Request Button - Only for Admin/Council */}
-      {userRole && (userRole === 'admin' || userRole === 'council') && (lowStock > 0 || outOfStock > 0) && (
-        <div className="mb-6 flex justify-end">
-          <button
-            onClick={() => setShowEmailModal(true)}
-            className="bg-green-500 text-white px-6 py-3 rounded-lg hover:bg-green-600 transition-colors duration-200 shadow-lg flex items-center font-semibold"
-          >
-            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-            </svg>
-            Send Procurement Request
-          </button>
-        </div>
-      )}
-
-      {/* Medicine Usage Instructions Button - Only for Admin/Council */}
-      {userRole && (userRole === 'admin' || userRole === 'council') && (
-        <div className="mb-6 flex justify-end">
-          <button
-            onClick={() => setShowUsageForm(true)}
-            className="bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition-colors duration-200 shadow-lg flex items-center font-semibold"
-          >
-            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-            </svg>
-            Add Medicine Usage Instructions
-          </button>
-        </div>
-      )}
-
-      {/* Add/Edit Medication Form */}
-      {editingMed ? (
-        <div className="mb-8 bg-white p-6 rounded-xl shadow-lg flex flex-col sm:flex-row gap-4 items-center">
-            <h3 className="font-semibold text-lg sm:mr-4">Edit Medicine</h3>
-            <input className="border border-gray-300 p-3 rounded-lg flex-1 focus:outline-none focus:ring-2 focus:ring-green-400" value={editingMed.name} onChange={e => setEditingMed({ ...editingMed, name: e.target.value })}/>
-            <input className="border border-gray-300 p-3 rounded-lg w-full sm:w-28 focus:outline-none focus:ring-2 focus:ring-green-400" type="number" value={editingMed.qty} onChange={e => setEditingMed({ ...editingMed, qty: e.target.value })}/>
-            <input className="border border-gray-300 p-3 rounded-lg w-full sm:w-40 focus:outline-none focus:ring-2 focus:ring-green-400" type="date" value={editingMed.expiry} onChange={e => setEditingMed({ ...editingMed, expiry: e.target.value })}/>
-            <div className="flex gap-2">
-                <button className="bg-green-600 text-white px-5 py-3 rounded-lg hover:bg-green-700 transition duration-300 font-semibold" onClick={saveEdit}>Save</button>
-                <button className="bg-gray-400 text-white px-5 py-3 rounded-lg hover:bg-gray-500 transition duration-300 font-semibold" onClick={() => setEditingMed(null)}>Cancel</button>
-            </div>
-        </div>
-      ) : (
-        <div className="mb-8 bg-white p-6 rounded-xl shadow-lg flex flex-col sm:flex-row gap-4 items-center">
-            <h3 className="font-semibold text-lg sm:mr-4">Add New Medicine</h3>
-            <input className="border border-gray-300 p-3 rounded-lg flex-1 focus:outline-none focus:ring-2 focus:ring-blue-400" placeholder="Medication Name" value={newMed.name} onChange={e => setNewMed({...newMed, name: e.target.value})} />
-            <input className="border border-gray-300 p-3 rounded-lg w-full sm:w-24 focus:outline-none focus:ring-2 focus:ring-blue-400" type="number" placeholder="Qty" value={newMed.qty} onChange={e => setNewMed({...newMed, qty: e.target.value})} />
-            <input className="border border-gray-300 p-3 rounded-lg w-full sm:w-40 focus:outline-none focus:ring-2 focus:ring-blue-400" type="date" value={newMed.expiry} onChange={e => setNewMed({...newMed, expiry: e.target.value})} />
-            <button className="bg-blue-600 text-white px-5 py-3 rounded-lg hover:bg-blue-700 transition duration-300 font-semibold w-full sm:w-auto" onClick={handleAdd}>Add</button>
-        </div>
-      )}
-
-      {/* Medication Table */}
-      
       {/* Health Requests Section */}
-      <div className="bg-white rounded-xl shadow-lg p-6 mt-6">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-bold">Health / Item Requests</h3>
-          <span className="text-sm text-gray-500">Total: {requests.length}</span>
+      <div className="bg-gradient-to-br from-blue-50 to-indigo-100 rounded-xl shadow-xl p-8 mb-6 border border-blue-200">
+        <div className="flex items-center mb-6">
+          <div className="flex items-center">
+            <div className="w-2 h-8 bg-blue-600 rounded-full mr-3"></div>
+            <h3 className="text-xl font-bold text-gray-800">Health / Item Requests</h3>
+          </div>
         </div>
 
-        <div className="flex items-center justify-end">
-          <button onClick={() => setShowAllNotifications(true)} className="text-blue-600 hover:underline">All Notifications</button>
+        {/* All Notifications Button with Total Count */}
+        <div className="mb-6 flex justify-center">
+          <button 
+            onClick={() => setShowAllNotifications(true)} 
+            className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-10 py-4 rounded-xl hover:from-blue-700 hover:to-blue-800 transform hover:scale-105 transition-all duration-200 shadow-lg flex items-center font-semibold text-lg border-2 border-blue-500 hover:border-blue-400"
+          >
+            <svg className="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-5 5-5-5h5v-5a7 7 0 10-14 0v5" />
+            </svg>
+            All Notifications
+            <span className="ml-3 bg-white text-blue-600 px-3 py-1 rounded-full text-sm font-bold">
+              {requests.length}
+            </span>
+          </button>
+        </div>
+
+        <div className="flex justify-center gap-4 flex-wrap">
+          {/* Send Procurement Request Button - Only for Admin/Council */}
+          {userRole && (userRole === 'admin' || userRole === 'council') && (lowStock > 0 || outOfStock > 0) && (
+            <button
+              onClick={() => setShowEmailModal(true)}
+              className="bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-3 rounded-xl hover:from-green-600 hover:to-green-700 transform hover:scale-105 transition-all duration-200 shadow-lg flex items-center font-semibold text-sm border-2 border-green-400 hover:border-green-300"
+            >
+              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+              Send Procurement Request
+            </button>
+          )}
+
+          {/* Medicine Usage Instructions Button - Only for Admin/Council */}
+          {userRole && (userRole === 'admin' || userRole === 'council') && (
+            <button
+              onClick={() => setShowUsageForm(true)}
+              className="bg-gradient-to-r from-purple-500 to-purple-600 text-white px-6 py-3 rounded-xl hover:from-purple-600 hover:to-purple-700 transform hover:scale-105 transition-all duration-200 shadow-lg flex items-center font-semibold text-sm border-2 border-purple-400 hover:border-purple-300"
+            >
+              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+              </svg>
+              Add Medicine Usage Instructions
+            </button>
+          )}
         </div>
 
         {/* All notifications modal */}
@@ -483,38 +471,69 @@ const handleBack = () => {
           </div>
         )}
       </div>
-      
 
-      <div className="bg-white rounded-xl shadow-lg p-2 sm:p-6 overflow-x-auto">
-        <table className="w-full text-left text-sm text-gray-700">
-          <thead className="bg-gray-50 uppercase text-gray-600 text-xs">
+      {/* Add/Edit Medication Form */}
+      {editingMed ? (
+        <div className="bg-white p-6 rounded-xl shadow-lg flex flex-col sm:flex-row gap-4 items-center">
+            <h3 className="font-semibold text-lg sm:mr-4">Edit Medicine</h3>
+            <input className="border border-gray-300 p-3 rounded-lg flex-1 focus:outline-none focus:ring-2 focus:ring-green-400" value={editingMed.name} onChange={e => setEditingMed({ ...editingMed, name: e.target.value })}/>
+            <input className="border border-gray-300 p-3 rounded-lg w-full sm:w-28 focus:outline-none focus:ring-2 focus:ring-green-400" type="number" value={editingMed.qty} onChange={e => setEditingMed({ ...editingMed, qty: e.target.value })}/>
+            <input className="border border-gray-300 p-3 rounded-lg w-full sm:w-40 focus:outline-none focus:ring-2 focus:ring-green-400" type="date" value={editingMed.expiry} onChange={e => setEditingMed({ ...editingMed, expiry: e.target.value })}/>
+            <div className="flex gap-2">
+                <button className="bg-green-600 text-white px-5 py-3 rounded-lg hover:bg-green-700 transition duration-300 font-semibold" onClick={saveEdit}>Save</button>
+                <button className="bg-gray-400 text-white px-5 py-3 rounded-lg hover:bg-gray-500 transition duration-300 font-semibold" onClick={() => setEditingMed(null)}>Cancel</button>
+            </div>
+        </div>
+      ) : (
+        <div className="bg-white p-6 rounded-xl shadow-lg flex flex-col sm:flex-row gap-4 items-center">
+            <h3 className="font-semibold text-lg sm:mr-4">Add New Medicine</h3>
+            <input className="border border-gray-300 p-3 rounded-lg flex-1 focus:outline-none focus:ring-2 focus:ring-blue-400" placeholder="Medication Name" value={newMed.name} onChange={e => setNewMed({...newMed, name: e.target.value})} />
+            <input className="border border-gray-300 p-3 rounded-lg w-full sm:w-24 focus:outline-none focus:ring-2 focus:ring-blue-400" type="number" placeholder="Qty" value={newMed.qty} onChange={e => setNewMed({...newMed, qty: e.target.value})} />
+            <input className="border border-gray-300 p-3 rounded-lg w-full sm:w-40 focus:outline-none focus:ring-2 focus:ring-blue-400" type="date" value={newMed.expiry} onChange={e => setNewMed({...newMed, expiry: e.target.value})} />
+            <button className="bg-blue-600 text-white px-5 py-3 rounded-lg hover:bg-blue-700 transition duration-300 font-semibold w-full sm:w-auto" onClick={handleAdd}>Add</button>
+        </div>
+      )}
+      {/* Medication Table */}
+      <div className="bg-gradient-to-br from-pink-50 to-rose-100 rounded-xl shadow-lg border border-pink-200 p-2 sm:p-6 overflow-x-auto">
+        <table className="w-full text-left text-sm">
+          <thead className="bg-gradient-to-r from-pink-500 to-rose-500 text-white text-xs uppercase rounded-t-lg">
             <tr>
-              <th className="px-6 py-4">Medicine Name</th>
-              <th className="px-6 py-4">Quantity</th>
-              <th className="px-6 py-4">Expiry Date</th>
-              <th className="px-6 py-4">Status</th>
-              <th className="px-6 py-4 text-center">Actions</th>
+              <th className="px-6 py-4 font-semibold">Medicine Name</th>
+              <th className="px-6 py-4 font-semibold">Quantity</th>
+              <th className="px-6 py-4 font-semibold">Expiry Date</th>
+              <th className="px-6 py-4 font-semibold">Status</th>
+              <th className="px-6 py-4 text-center font-semibold">Actions</th>
             </tr>
           </thead>
-          <tbody>
-            {medications.map(med => (
-              <tr key={med.id} className="border-b hover:bg-gray-50 transition-colors duration-200">
-                <td className="px-6 py-4 font-medium text-gray-900">{med.name}</td>
-                <td className="px-6 py-4">{med.qty}</td>
-                <td className="px-6 py-4">{med.expiry}</td>
+          <tbody className="bg-white">
+            {medications.map((med, index) => (
+              <tr key={med.id} className={`border-b border-pink-100 hover:bg-gradient-to-r hover:from-pink-50 hover:to-rose-50 transition-all duration-300 ${
+                index % 2 === 0 ? 'bg-pink-25' : 'bg-white'
+              }`}>
+                <td className="px-6 py-4 font-semibold text-gray-800">{med.name}</td>
+                <td className="px-6 py-4 text-gray-700 font-medium">{med.qty}</td>
+                <td className="px-6 py-4 text-gray-700">{med.expiry}</td>
                 <td className="px-6 py-4">
-                    <span className={`px-3 py-1 text-xs font-semibold rounded-full ${getStatusColor(calculateStatus(med.qty))}`}>
+                    <span className={`px-3 py-1 text-xs font-bold rounded-full shadow-sm ${getStatusColor(calculateStatus(med.qty))}`}>
                         {calculateStatus(med.qty)}
                     </span>
                 </td>
                 <td className="px-6 py-4 flex justify-center gap-3">
-                  <button className="text-gray-500 hover:text-blue-600 transition" onClick={() => handleEdit(med)}>
+                  <button 
+                    className="text-pink-600 hover:text-white hover:bg-pink-500 p-2 rounded-full transition-all duration-300 transform hover:scale-110 shadow-md" 
+                    onClick={() => handleEdit(med)}
+                    title="Edit Medicine"
+                  >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                         <path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" />
                         <path fillRule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clipRule="evenodd" />
                     </svg>
                   </button>
-                  <button className="text-gray-500 hover:text-red-600 transition" onClick={() => handleDelete(med.id)}>
+                  <button 
+                    className="text-rose-500 hover:text-white hover:bg-rose-500 p-2 rounded-full transition-all duration-300 transform hover:scale-110 shadow-md" 
+                    onClick={() => handleDelete(med.id)}
+                    title="Delete Medicine"
+                  >
                     <DeleteIcon />
                   </button>
                 </td>
